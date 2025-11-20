@@ -1,0 +1,13 @@
+# Market mechanism configuration
+orderbook:
+  depth: 10
+  tick_size: 0.01
+
+matching_engine:
+  type: "continuous"
+  matching_frequency: 0.1  # seconds
+
+assets:
+  - symbol: "KC-WIN-SB58"
+    name: "Kansas City Chiefs to win Super Bowl LVIII"
+    type: "binary"

@@ -1,0 +1,15 @@
+# Base configuration for the ABM
+simulation:
+  seed: 42
+  steps: 1000
+  verbose: true
+
+market:
+  initial_price: 0.5
+  trading_hours: 
+    start: "09:00"
+    end: "17:00"
+
+system:
+  log_level: "INFO"
+  data_dir: "./data"

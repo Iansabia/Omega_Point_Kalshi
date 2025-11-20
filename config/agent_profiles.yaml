@@ -1,0 +1,17 @@
+# Agent profiles and parameters
+noise_trader:
+  count: 50
+  wealth_distribution:
+    type: "lognormal"
+    mean: 1000
+    sigma: 0.5
+
+informed_trader:
+  count: 5
+  wealth: 10000
+  information_quality: 0.8
+
+market_maker:
+  count: 1
+  wealth: 100000
+  target_inventory: 0
