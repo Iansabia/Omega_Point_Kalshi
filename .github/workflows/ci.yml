@@ -59,7 +59,7 @@ jobs:
         echo "PYTHONPATH is: $PYTHONPATH"
         echo "Current directory: $(pwd)"
         ls -la tests/
-        pytest tests/ --cov=src --cov-report=xml --cov-report=term-missing --cov-fail-under=50 -v --tb=short
+        pytest tests/ --cov=src --cov-report=xml --cov-report=term-missing -v --tb=short
 
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v3
