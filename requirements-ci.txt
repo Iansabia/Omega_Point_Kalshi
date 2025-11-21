@@ -1,0 +1,26 @@
+# Minimal requirements for CI testing
+# This avoids complex dependency resolution issues
+# Using binary wheels to avoid compilation
+
+# Core dependencies for tests
+mesa==3.0.3
+numpy==1.26.4
+pandas==2.2.2
+numba==0.56.4
+
+# Testing
+pytest>=7.4.0
+pytest-cov>=4.1.0
+pytest-mock>=3.12.0
+
+# Linting
+flake8>=6.0.0
+mypy>=1.5.0
+
+# Security
+safety>=3.0.0
+bandit>=1.7.0
+
+# Utilities needed by tests
+python-dateutil>=2.8.2
+pyyaml>=6.0
