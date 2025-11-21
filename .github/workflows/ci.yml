@@ -100,13 +100,13 @@ jobs:
       env:
         PYTHONPATH: ${{ github.workspace }}
       run: |
-        python src/main.py --steps 50 --agents 50
+        python src/main.py --steps 50 --verbose
 
     - name: Verify output files
       run: |
-        ls -lh output/
-        test -f output/trades.csv
-        test -f output/agent_metrics.csv
+        ls -lh results/
+        test -f results/agent_data.csv || test -f results/trades.csv
+        test -f results/model_data.csv || test -f results/agent_metrics.csv
 
   security:
     runs-on: ubuntu-latest
