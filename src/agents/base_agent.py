@@ -11,8 +11,9 @@ class BaseTrader(mesa.Agent):
     Abstract base class for all trader agents.
     """
 
-    def __init__(self, unique_id: int, model: mesa.Model, initial_wealth: float = 1000.0):
-        super().__init__(unique_id, model)
+    def __init__(self, model: mesa.Model, initial_wealth: float = 1000.0):
+        # Mesa 3.3+ requires model first, unique_id is auto-assigned
+        super().__init__(model)
         self.initial_wealth = initial_wealth
         self.wealth = initial_wealth
         self.position = 0.0  # Net position in contracts
@@ -47,14 +48,30 @@ class BaseTrader(mesa.Agent):
             self.model.matching_engine.match_order(order)
             self.orders.append(order)
 
-    def execute_trade(self, quantity: float, price: float, side: str):
-        """Update portfolio after a trade execution."""
+    def execute_trade(self, side: str, quantity: float, price: float):
+        """
+        Update portfolio after a trade execution.
+
+        Args:
+            side: 'BUY' or 'SELL'
+            quantity: Number of units
+            price: Price per unit
+
+        Raises:
+            ValueError: If insufficient wealth or position
+        """
         cost = quantity * price
 
         if side == 'BUY':
+            # Check if enough wealth to buy
+            if cost > self.wealth:
+                raise ValueError(f"Insufficient wealth: need {cost:.2f}, have {self.wealth:.2f}")
             self.wealth -= cost
             self.position += quantity
         else:
+            # Check if enough position to sell
+            if quantity > self.position:
+                raise ValueError(f"Insufficient position: need {quantity:.2f}, have {self.position:.2f}")
             self.wealth += cost
             self.position -= quantity
 
@@ -63,7 +80,7 @@ class BaseTrader(mesa.Agent):
             "quantity": quantity,
             "price": price,
             "step": getattr(self.model, 'step_count', 0),
-            "timestamp": getattr(self.model, 'schedule', None) and getattr(self.model.schedule, 'steps', 0)
+            "timestamp": getattr(self.model, 'step_count', 0)  # Mesa 3.3+ uses step_count directly
         }
         self.trade_history.append(trade_record)
 

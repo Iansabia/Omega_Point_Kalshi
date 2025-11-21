@@ -12,13 +12,19 @@ class HomerAgent(BaseTrader):
     Overweights specific outcomes due to loyalty.
     """
     
-    def __init__(self, unique_id: int, model, initial_wealth: float = 2000.0, loyalty_asset: str = "YES", loyalty_strength: float = 0.7):
-        super().__init__(unique_id, model, initial_wealth=initial_wealth)
+    def __init__(self, model, initial_wealth: float = 2000.0, loyalty_asset: str = "YES", loyalty_strength: float = 0.7):
+        super().__init__(model, initial_wealth=initial_wealth)
         self.loyalty_strength = loyalty_strength # [0.5, 0.9]
         self.loyalty_asset = loyalty_asset
 
     def observe_market(self):
-        pass
+        """Observe market with loyalty bias."""
+        return {
+            'price': self.model.current_price,
+            'loyalty_asset': self.loyalty_asset,
+            'loyalty_strength': self.loyalty_strength,
+            'position': self.position
+        }
 
     def update_loyalty(self, positive_outcome: bool):
         """

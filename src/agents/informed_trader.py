@@ -11,13 +11,18 @@ class InformedTrader(BaseTrader):
     Informed trader who receives a noisy signal of the true value.
     """
     
-    def __init__(self, unique_id: int, model, initial_wealth: float = 10000.0, information_quality: float = 0.8):
-        super().__init__(unique_id, model, initial_wealth=initial_wealth)
+    def __init__(self, model, initial_wealth: float = 10000.0, information_quality: float = 0.8):
+        super().__init__(model, initial_wealth=initial_wealth)
         self.information_quality = information_quality # [0.5, 1.0]
         self.true_value = 0.5 # This should come from model or external source
 
     def observe_market(self):
-        pass
+        """Observe market and return state including fundamental value."""
+        return {
+            'price': self.model.current_price,
+            'fundamental_value': getattr(self.model, 'fundamental_value', self.model.current_price),
+            'spread': self.model.order_book.get_spread() if hasattr(self.model, 'order_book') else 0.0
+        }
 
     def acquire_information(self) -> float:
         """

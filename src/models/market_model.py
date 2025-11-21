@@ -1,4 +1,5 @@
 import mesa
+from mesa import Model
 from mesa.datacollection import DataCollector
 from typing import Dict, Any, List, Optional
 import random
@@ -48,8 +49,8 @@ class PredictionMarketModel(mesa.Model):
         self.current_price = market_config.get('initial_price', 0.5)
         self.fundamental_value = self.current_price  # Track true value
 
-        # Initialize scheduler
-        self.schedule = mesa.time.RandomActivation(self)
+        # Mesa 3.3+ doesn't use schedulers - agents are managed directly in Model
+        # Agents are automatically tracked in self.agents
 
         # Initialize market mechanisms
         self.order_book = OrderBook()
@@ -89,8 +90,8 @@ class PredictionMarketModel(mesa.Model):
     def _initialize_agents(self):
         """
         Initialize agents based on configuration.
+        Mesa 3.3+ auto-assigns unique_ids to agents.
         """
-        agent_id = 0
 
         # Create Noise Traders
         if 'noise_trader' in self.agent_config:
@@ -113,13 +114,11 @@ class PredictionMarketModel(mesa.Model):
             for i in range(count):
                 strategy = strategies[i % len(strategies)]
                 agent = NoiseTrader(
-                    unique_id=agent_id,
                     model=self,
                     strategy=strategy,
                     initial_wealth=wealth_values[i]
                 )
-                self.schedule.add(agent)
-                agent_id += 1
+                # Mesa 3.3+ auto-registers agents and assigns unique_id
                 logger.debug(f"Created NoiseTrader {agent.unique_id} with strategy={strategy}, wealth={wealth_values[i]:.2f}")
 
         # Create Informed Traders
@@ -131,13 +130,11 @@ class PredictionMarketModel(mesa.Model):
 
             for i in range(count):
                 agent = InformedTrader(
-                    unique_id=agent_id,
                     model=self,
                     initial_wealth=wealth,
                     information_quality=info_quality
                 )
-                self.schedule.add(agent)
-                agent_id += 1
+                # Mesa 3.3+ auto-registers agents
                 logger.debug(f"Created InformedTrader {agent.unique_id} with quality={info_quality}")
 
         # Create Arbitrageurs
@@ -149,13 +146,11 @@ class PredictionMarketModel(mesa.Model):
 
             for i in range(count):
                 agent = Arbitrageur(
-                    unique_id=agent_id,
                     model=self,
                     initial_wealth=wealth,
                     detection_speed=detection_speed
                 )
-                self.schedule.add(agent)
-                agent_id += 1
+                # Mesa 3.3+ auto-registers agents
                 logger.debug(f"Created Arbitrageur {agent.unique_id}")
 
         # Create Market Makers
@@ -167,13 +162,11 @@ class PredictionMarketModel(mesa.Model):
 
             for i in range(count):
                 agent = MarketMakerAgent(
-                    unique_id=agent_id,
                     model=self,
                     initial_wealth=wealth,
                     target_inventory=target_inventory
                 )
-                self.schedule.add(agent)
-                agent_id += 1
+                # Mesa 3.3+ auto-registers agents
                 logger.debug(f"Created MarketMaker {agent.unique_id}")
 
         # Create Homer Agents
@@ -185,14 +178,12 @@ class PredictionMarketModel(mesa.Model):
 
             for i in range(count):
                 agent = HomerAgent(
-                    unique_id=agent_id,
                     model=self,
                     initial_wealth=wealth,
                     loyalty_asset="YES",  # Could be randomized or configured
                     loyalty_strength=loyalty_strength
                 )
-                self.schedule.add(agent)
-                agent_id += 1
+                # Mesa 3.3+ auto-registers agents
                 logger.debug(f"Created HomerAgent {agent.unique_id}")
 
         # Create LLM Agents
@@ -204,16 +195,14 @@ class PredictionMarketModel(mesa.Model):
 
             for i in range(count):
                 agent = LLMAgent(
-                    unique_id=agent_id,
                     model=self,
                     initial_wealth=wealth,
                     risk_profile=risk_profile
                 )
-                self.schedule.add(agent)
-                agent_id += 1
+                # Mesa 3.3+ auto-registers agents
                 logger.debug(f"Created LLMAgent {agent.unique_id}")
 
-        logger.info(f"Initialized {agent_id} agents total")
+        logger.info(f"Initialized {len(list(self.agents))} agents total")
 
     def process_batch_decisions(self):
         """
@@ -256,8 +245,12 @@ class PredictionMarketModel(mesa.Model):
         """
         self.step_count += 1
 
-        # Agents observe market and make decisions
-        self.schedule.step()
+        # Agents observe market and make decisions (Mesa 3.3+ doesn't use schedulers)
+        # Shuffle agents for random activation order
+        agent_list = list(self.agents)
+        self.random.shuffle(agent_list)
+        for agent in agent_list:
+            agent.step()
 
         # Process any batched LLM decisions
         if self.pending_decisions:

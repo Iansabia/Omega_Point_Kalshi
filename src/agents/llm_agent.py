@@ -18,8 +18,8 @@ class LLMAgent(BaseTrader):
     Trader agent driven by an LLM (Gemini Flash 2.0).
     """
     
-    def __init__(self, unique_id: int, model, initial_wealth: float = 10000.0, risk_profile: str = "balanced"):
-        super().__init__(unique_id, model, initial_wealth=initial_wealth)
+    def __init__(self, model, initial_wealth: float = 10000.0, risk_profile: str = "balanced"):
+        super().__init__(model, initial_wealth=initial_wealth)
         self.risk_profile = risk_profile
         self.cumulative_cost = 0.0
         self.client = None
@@ -48,9 +48,23 @@ class LLMAgent(BaseTrader):
     def observe_market(self):
         """
         Update internal state based on market observations.
+        Returns market state dictionary.
         """
-        # In a real agent, this would look at order book depth, recent trades, etc.
-        pass
+        current_price = self.model.current_price
+
+        # Calculate volatility if we have price history
+        volatility = 0.0
+        if hasattr(self.model, 'order_book'):
+            spread = self.model.order_book.get_spread()
+            volatility = spread / current_price if current_price > 0 and spread else 0.0
+
+        return {
+            'price': current_price,
+            'volatility': volatility,
+            'position': self.position,
+            'wealth': self.wealth,
+            'risk_profile': self.risk_profile
+        }
 
     def make_decision(self):
         """
@@ -74,10 +88,17 @@ class LLMAgent(BaseTrader):
         Determine if LLM call is worth the cost/latency.
         """
         # Use rules for simple cases
-        if market_state['volatility'] < 0.1:
+        if market_state.get('volatility', 0) < 0.1:
             return False
         # Use LLM for complex scenarios
         return True
+
+    def rule_based_decision(self, market_state: Dict):
+        """
+        Public wrapper for rule-based decision (for testing).
+        Implements simple trend-following logic.
+        """
+        return self._rule_based_decision(market_state)
 
     def _rule_based_decision(self, market_state: Dict):
         """Fallback rule-based logic: Simple Trend Following."""
