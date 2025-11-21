@@ -11,14 +11,23 @@ class Arbitrageur(BaseTrader):
     Arbitrageur who exploits price discrepancies between market price and fundamental value.
     """
     
-    def __init__(self, unique_id: int, model, initial_wealth: float = 50000.0, detection_speed: float = 0.8):
-        super().__init__(unique_id, model, initial_wealth=initial_wealth)
+    def __init__(self, model, initial_wealth: float = 50000.0, detection_speed: float = 0.8):
+        super().__init__(model, initial_wealth=initial_wealth)
         self.detection_speed = detection_speed # [0.7, 1.0]
         self.min_spread = 0.02
         self.true_value = 0.5 # Should be shared/global
 
     def observe_market(self):
-        pass
+        """Observe market for arbitrage opportunities."""
+        market_price = self.model.current_price
+        spread = abs(market_price - self.true_value)
+
+        return {
+            'price': market_price,
+            'fundamental_value': self.true_value,
+            'spread': spread,
+            'arbitrage_opportunity': spread > self.min_spread
+        }
 
     def detect_arbitrage(self) -> float:
         """

@@ -113,11 +113,11 @@ class MatchingEngine:
             incoming_agent_id = int(incoming.trader_id.split('_')[1])
             resting_agent_id = int(resting.trader_id.split('_')[1])
 
-            # Get agents from model schedule
+            # Get agents from model (Mesa 3.3+ uses model.agents directly)
             incoming_agent = None
             resting_agent = None
 
-            for agent in self.model.schedule.agents:
+            for agent in self.model.agents:
                 if agent.unique_id == incoming_agent_id:
                     incoming_agent = agent
                 elif agent.unique_id == resting_agent_id:
@@ -126,18 +126,18 @@ class MatchingEngine:
             # Notify agents
             if incoming_agent:
                 incoming_agent.execute_trade(
+                    side=incoming.side,
                     quantity=trade.quantity,
-                    price=trade.price,
-                    side=incoming.side
+                    price=trade.price
                 )
 
             if resting_agent:
                 # Resting order is on opposite side
                 resting_side = 'SELL' if incoming.side == 'BUY' else 'BUY'
                 resting_agent.execute_trade(
+                    side=resting_side,
                     quantity=trade.quantity,
-                    price=trade.price,
-                    side=resting_side
+                    price=trade.price
                 )
 
         except (ValueError, IndexError, AttributeError) as e:

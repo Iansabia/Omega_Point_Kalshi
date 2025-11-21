@@ -23,28 +23,60 @@ class OrderBook:
         self.orders[order.order_id] = order
 
     def get_best_bid(self) -> float:
+        """Get best bid price."""
         if not self.bids:
             return 0.0
         return -self.bids[0][0]
 
     def get_best_ask(self) -> float:
+        """Get best ask price."""
         if not self.asks:
             return float('inf')
         return self.asks[0][0]
 
+    def get_best_bid_order(self) -> Order:
+        """Get best bid Order object."""
+        if not self.bids:
+            return None
+        return self.bids[0][2]
+
+    def get_best_ask_order(self) -> Order:
+        """Get best ask Order object."""
+        if not self.asks:
+            return None
+        return self.asks[0][2]
+
     def get_mid_price(self) -> float:
+        """Get mid-price between best bid and ask."""
         bid = self.get_best_bid()
         ask = self.get_best_ask()
         if bid == 0.0 or ask == float('inf'):
-            return 0.0
+            return None  # Changed to None for consistency
         return (bid + ask) / 2.0
 
     def get_spread(self) -> float:
+        """Get bid-ask spread."""
         bid = self.get_best_bid()
         ask = self.get_best_ask()
         if bid == 0.0 or ask == float('inf'):
-            return 0.0
+            return None  # Changed to None for consistency
         return ask - bid
+
+    def remove_order(self, order_id: str):
+        """Remove an order from the book."""
+        if order_id not in self.orders:
+            return
+
+        order = self.orders.pop(order_id)
+
+        # Remove from appropriate heap
+        # Note: This is O(n) operation. For production, consider using a better data structure.
+        if order.side == 'BUY':
+            self.bids = [(p, ts, o) for p, ts, o in self.bids if o.order_id != order_id]
+            heapq.heapify(self.bids)
+        else:
+            self.asks = [(p, ts, o) for p, ts, o in self.asks if o.order_id != order_id]
+            heapq.heapify(self.asks)
 
     def get_imbalance(self) -> float:
         """

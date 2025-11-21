@@ -90,7 +90,7 @@ def save_results(model: PredictionMarketModel, output_dir: str = "results"):
         "total_trades": len(model.matching_engine.trades),
         "final_spread": model.get_spread(),
         "llm_cost": model.cumulative_llm_cost,
-        "num_agents": len(list(model.schedule.agents))
+        "num_agents": len(list(model.agents))
     }
 
     with open(output_path / "summary.yaml", "w") as f:
@@ -112,7 +112,7 @@ def print_agent_summary(model: PredictionMarketModel):
     logger.info("=" * 60)
 
     agent_stats = {}
-    for agent in model.schedule.agents:
+    for agent in model.agents:
         agent_type = agent.__class__.__name__
         if agent_type not in agent_stats:
             agent_stats[agent_type] = {
@@ -176,7 +176,7 @@ def main():
         seed=args.seed
     )
 
-    logger.info(f"Model initialized with {len(list(model.schedule.agents))} agents")
+    logger.info(f"Model initialized with {len(list(model.agents))} agents")
 
     # Run Simulation
     try:

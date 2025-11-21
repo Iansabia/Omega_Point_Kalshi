@@ -11,15 +11,25 @@ class MarketMakerAgent(BaseTrader):
     Market Maker using Avellaneda-Stoikov framework.
     """
     
-    def __init__(self, unique_id: int, model, initial_wealth: float = 100000.0, target_inventory: float = 0.0, risk_param: float = 0.1):
-        super().__init__(unique_id, model, initial_wealth=initial_wealth)
+    def __init__(self, model, initial_wealth: float = 100000.0, target_inventory: float = 0.0, risk_param: float = 0.1):
+        super().__init__(model, initial_wealth=initial_wealth)
         self.risk_param = risk_param
         self.target_inventory = target_inventory
         self.inventory = 0.0 # Tracks current inventory
         self.half_spread = 0.02 # Base spread
 
     def observe_market(self):
+        """Observe market and update inventory."""
         self.inventory = self.position
+
+        return {
+            'price': self.model.current_price,
+            'inventory': self.inventory,
+            'target_inventory': self.target_inventory,
+            'deviation': self.inventory - self.target_inventory,
+            'bid': self.model.order_book.get_best_bid() if hasattr(self.model, 'order_book') else None,
+            'ask': self.model.order_book.get_best_ask() if hasattr(self.model, 'order_book') else None
+        }
 
     def estimate_mid_price(self) -> float:
         # Use model's current price or last trade

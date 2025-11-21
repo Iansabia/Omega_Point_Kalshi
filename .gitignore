@@ -6,3 +6,19 @@ __pycache__/
 .idea/
 .vscode/
 *.log
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+coverage.xml
+*.cover
+.hypothesis/
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Bandit
+bandit-report.json
