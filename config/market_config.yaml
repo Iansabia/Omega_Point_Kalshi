@@ -1,13 +1,32 @@
 # Market mechanism configuration
+
 orderbook:
   depth: 10
   tick_size: 0.01
+  price_levels: 100
+  min_price: 0.01
+  max_price: 0.99
 
 matching_engine:
   type: "continuous"
   matching_frequency: 0.1  # seconds
+  allow_self_trade: false
 
 assets:
   - symbol: "KC-WIN-SB58"
     name: "Kansas City Chiefs to win Super Bowl LVIII"
     type: "binary"
+    category: "sports"
+    league: "NFL"
+
+transaction_costs:
+  taker_fee: 0.0005  # 5 bps
+  maker_fee: 0.0000  # 0 bps (maker rebate model)
+  slippage_model: "almgren_chriss"
+
+risk_limits:
+  max_position: 10000
+  max_order_size: 1000
+  max_daily_loss: 5000
+  max_drawdown: 0.20
+  position_limit_pct: 0.10  # % of total market
