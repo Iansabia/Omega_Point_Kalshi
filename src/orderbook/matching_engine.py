@@ -192,63 +192,32 @@ class MatchingEngine:
             remaining_qty -= qty
             
         if remaining_qty > 1e-9:
-            # Cannot fill fully
+            # Cannot fill fully - reject the FOK order
             return []
-            
-        # If we get here, we can execute
-        fills = []
-        for resting, qty, price in potential_matches:
-            # We need to find the ACTUAL resting order in the REAL book and modify it
-            # This is tricky because 'resting' is a reference to the object.
-            # Modifying 'resting.remaining' modifies the object in the real book too!
-            # WAIT! We shouldn't have modified it in the simulation loop above?
-            # In the simulation loop above, I didn't modify resting.remaining.
-            # I just calculated 'qty'.
-            
-            # NOW we execute
-            trade = self._execute_trade(incoming, resting, qty, price)
-            fills.append(trade)
-            
-            resting.remaining -= qty
-            incoming.remaining -= qty
-            
-            # Cleanup real book
-            # This is the hard part: removing specific items from a heap is O(N).
-            # Lazy deletion is better: check for remaining==0 when popping in normal match loop.
-            # But here we need to ensure the book is consistent.
-            
-            # For now, let's just re-run the match logic since we know it will succeed.
-            # But we must be careful about order.
-            pass
-            
-        # Re-run standard match logic (it will succeed because we verified)
-        # Reset incoming remaining just in case
-        incoming.remaining = incoming.quantity
-        return self.match_order(incoming) # This calls _handle_fok again? No, change type temporarily?
-        
-        # Better: Just implement the execution loop here since we know it works.
-        # But we need to pop from the REAL book.
-        
-        # Reset incoming
+
+        # If we get here, we verified enough liquidity exists.
+        # Now execute the actual fills by matching against the real order book.
         incoming.remaining = incoming.quantity
         fills = []
-        
+
         while book and incoming.remaining > 0:
-             # We know this will succeed and not break because of the check above
+            # We know this will succeed because we verified liquidity above
             best_price_tuple = book[0]
             resting_order = best_price_tuple[2]
             best_price = abs(best_price_tuple[0])
-            
+
             fill_qty = min(incoming.remaining, resting_order.remaining)
             trade = self._execute_trade(incoming, resting_order, fill_qty, best_price)
             fills.append(trade)
-            
+
+            # Update quantities
             resting_order.remaining -= fill_qty
+            incoming.remaining -= fill_qty
+
+            # Remove filled orders from book
             if resting_order.remaining <= 1e-9:
                 heapq.heappop(book)
                 if resting_order.order_id in self.orderbook.orders:
                     del self.orderbook.orders[resting_order.order_id]
-            
-            incoming.remaining -= fill_qty
-            
+
         return fills

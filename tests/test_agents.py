@@ -88,21 +88,20 @@ class TestNoiseTrader:
         assert 'price' in market_state
         assert 'spread' in market_state
 
-    @pytest.mark.xfail(reason="Probabilistic test - may fail due to randomness")
     def test_noise_trader_make_decision_random(self, mock_model):
         """Test random noise trader decision making."""
         agent = NoiseTrader(model=mock_model, strategy="random")
 
-        # Random strategy should sometimes return a decision
-        decisions = []
+        # Random strategy should sometimes submit orders
+        # With 10% probability, expect around 10 orders in 100 tries
+        initial_order_count = len(agent.orders)
         for _ in range(100):
-            decision = agent.make_decision()
-            if decision is not None:
-                decisions.append(decision)
+            agent.make_decision()
 
-        # Should have some decisions (not all None due to randomness)
-        # With 10% probability, expect around 10 decisions in 100 tries
-        assert len(decisions) > 0
+        # Should have submitted some orders (not zero due to randomness)
+        # With 10% probability over 100 iterations, probability of 0 orders is (0.9)^100 ≈ 0.000027%
+        orders_submitted = len(agent.orders) - initial_order_count
+        assert orders_submitted > 0, f"Expected at least 1 order in 100 tries, got {orders_submitted}"
 
     def test_noise_trader_wealth_tracking(self, mock_model):
         """Test that noise trader tracks wealth correctly."""
