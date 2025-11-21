@@ -1,17 +1,44 @@
 # Agent profiles and parameters
+
 noise_trader:
   count: 50
   wealth_distribution:
     type: "lognormal"
     mean: 1000
     sigma: 0.5
+  strategies:
+    - random
+    - contrarian
+    - trend
 
 informed_trader:
   count: 5
   wealth: 10000
   information_quality: 0.8
+  information_cost: 1.0
+
+arbitrageur:
+  count: 3
+  wealth: 50000
+  detection_speed: 0.9
+  min_spread: 0.01
 
 market_maker:
   count: 1
   wealth: 100000
   target_inventory: 0
+  spread: 0.02
+  risk_param: 0.1
+
+homer_agent:
+  count: 10
+  wealth: 2000
+  loyalty_strength: 0.7
+  loyalty_asset: "YES"
+
+llm_agent:
+  count: 2
+  wealth: 10000
+  risk_profile: "moderate"
+  use_cache: true
+  batch_mode: true
