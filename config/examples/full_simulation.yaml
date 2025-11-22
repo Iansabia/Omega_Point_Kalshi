@@ -1,0 +1,17 @@
+# Full Simulation Configuration
+# Complete setup with all agent types for production runs
+
+market:
+  initial_price: 0.5
+  ticker: "NFL_CHI_GB_2025W10"
+  fundamental_value: 0.55  # True win probability
+
+simulation:
+  max_steps: 5000
+  collection_interval: 10  # Collect data every 10 steps for efficiency
+  warmup_steps: 100  # Steps before data collection starts
+
+risk_management:
+  max_position_per_agent: 100
+  max_drawdown: 0.15
+  circuit_breaker_threshold: 0.05  # Halt if price moves >5% in one step
