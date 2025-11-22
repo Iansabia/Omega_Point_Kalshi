@@ -2,14 +2,23 @@
 Performance metrics for backtesting and live trading.
 
 Implements standard trading metrics plus prediction market-specific measures.
+Includes QuantStats integration for comprehensive tearsheets.
 """
 
 import numpy as np
 import pandas as pd
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Union, Any
 import logging
 
 logger = logging.getLogger(__name__)
+
+# Try to import QuantStats (optional dependency)
+try:
+    import quantstats as qs
+    HAS_QUANTSTATS = True
+except ImportError:
+    HAS_QUANTSTATS = False
+    logger.warning("QuantStats not installed. Advanced metrics unavailable. Install with: pip install quantstats")
 
 def calculate_returns(prices: pd.Series) -> pd.Series:
     """Calculate simple returns from price series."""
@@ -313,3 +322,232 @@ def print_performance_report(metrics: Dict[str, float]):
         logger.info(f"  Log Loss: {metrics['log_loss']:.4f}")
 
     logger.info("=" * 60)
+
+
+def generate_quantstats_report(
+    returns: Union[pd.Series, pd.DataFrame],
+    benchmark: Optional[pd.Series] = None,
+    output_file: Optional[str] = None,
+    title: str = "Strategy Performance"
+) -> Optional[Dict]:
+    """
+    Generate comprehensive QuantStats tearsheet.
+
+    Args:
+        returns: Series or DataFrame of returns
+        benchmark: Optional benchmark returns for comparison
+        output_file: If provided, save HTML report to this file
+        title: Title for the report
+
+    Returns:
+        Dictionary with QuantStats metrics (if QuantStats available)
+    """
+    if not HAS_QUANTSTATS:
+        logger.warning("QuantStats not available. Cannot generate tearsheet.")
+        return None
+
+    logger.info("Generating QuantStats tearsheet...")
+
+    # Convert returns to Series if needed
+    if isinstance(returns, pd.DataFrame):
+        returns = returns.iloc[:, 0]
+
+    # Generate HTML report
+    if output_file:
+        qs.reports.html(
+            returns,
+            benchmark=benchmark,
+            output=output_file,
+            title=title
+        )
+        logger.info(f"QuantStats report saved to: {output_file}")
+
+    # Generate metrics
+    metrics = qs.reports.metrics(
+        returns,
+        mode='full',
+        display=False
+    )
+
+    return metrics
+
+
+def calculate_prediction_market_accuracy(
+    forecasts: np.ndarray,
+    outcomes: np.ndarray,
+    probability_bins: int = 10
+) -> Dict[str, float]:
+    """
+    Calculate prediction market calibration metrics.
+
+    Args:
+        forecasts: Array of probability forecasts [0, 1]
+        outcomes: Array of actual outcomes (0 or 1)
+        probability_bins: Number of bins for calibration curve
+
+    Returns:
+        Dictionary with calibration metrics
+    """
+    if len(forecasts) == 0:
+        return {}
+
+    # Calibration curve
+    bin_edges = np.linspace(0, 1, probability_bins + 1)
+    bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2
+
+    calibration_data = []
+    for i in range(probability_bins):
+        mask = (forecasts >= bin_edges[i]) & (forecasts < bin_edges[i + 1])
+        if mask.sum() > 0:
+            avg_forecast = forecasts[mask].mean()
+            avg_outcome = outcomes[mask].mean()
+            count = mask.sum()
+            calibration_data.append({
+                'bin': i,
+                'avg_forecast': avg_forecast,
+                'avg_outcome': avg_outcome,
+                'count': count,
+                'calibration_error': abs(avg_forecast - avg_outcome)
+            })
+
+    # Expected Calibration Error (ECE)
+    total_samples = len(forecasts)
+    ece = sum(
+        (d['count'] / total_samples) * d['calibration_error']
+        for d in calibration_data
+    )
+
+    # Maximum Calibration Error (MCE)
+    mce = max(d['calibration_error'] for d in calibration_data) if calibration_data else 0.0
+
+    # Brier score decomposition
+    brier = calculate_brier_score(forecasts, outcomes)
+    reliability = ece
+    resolution = np.var(outcomes)
+    uncertainty = outcomes.mean() * (1 - outcomes.mean())
+
+    return {
+        'brier_score': brier,
+        'expected_calibration_error': ece,
+        'max_calibration_error': mce,
+        'reliability': reliability,
+        'resolution': resolution,
+        'uncertainty': uncertainty,
+        'calibration_curve': calibration_data
+    }
+
+
+def calculate_market_efficiency_metrics(
+    market_prices: pd.Series,
+    fundamental_values: pd.Series
+) -> Dict[str, float]:
+    """
+    Calculate market efficiency metrics for prediction markets.
+
+    Args:
+        market_prices: Series of market prices
+        fundamental_values: Series of true fundamental values
+
+    Returns:
+        Dictionary with efficiency metrics
+    """
+    if len(market_prices) == 0:
+        return {}
+
+    # Price deviation from fundamentals
+    deviations = market_prices - fundamental_values
+    abs_deviations = np.abs(deviations)
+
+    # Mean Absolute Error
+    mae = abs_deviations.mean()
+
+    # Root Mean Squared Error
+    rmse = np.sqrt((deviations ** 2).mean())
+
+    # Correlation
+    correlation = market_prices.corr(fundamental_values)
+
+    # Information ratio (how much price tracks fundamentals)
+    tracking_error = deviations.std()
+    information_ratio = deviations.mean() / tracking_error if tracking_error > 0 else 0.0
+
+    # Time to convergence (periods where abs deviation < threshold)
+    convergence_threshold = 0.05  # Within 5% of fundamental
+    converged = abs_deviations < convergence_threshold
+    convergence_rate = converged.sum() / len(converged)
+
+    return {
+        'mean_absolute_error': mae,
+        'rmse': rmse,
+        'correlation': correlation,
+        'information_ratio': information_ratio,
+        'convergence_rate': convergence_rate,
+        'avg_deviation': deviations.mean(),
+        'tracking_error': tracking_error
+    }
+
+
+def calculate_stress_test_metrics(
+    returns: pd.Series,
+    stress_scenarios: Optional[Dict[str, pd.Series]] = None
+) -> Dict[str, Any]:
+    """
+    Calculate performance under stress scenarios.
+
+    Args:
+        returns: Series of returns
+        stress_scenarios: Optional dictionary of scenario names to market returns
+
+    Returns:
+        Dictionary with stress test results
+    """
+    if len(returns) == 0:
+        return {}
+
+    # Identify worst periods
+    worst_day = returns.min()
+    worst_week = returns.rolling(5).sum().min()
+    worst_month = returns.rolling(21).sum().min()
+
+    # Value at Risk (VaR)
+    var_95 = np.percentile(returns, 5)
+    var_99 = np.percentile(returns, 1)
+
+    # Conditional Value at Risk (CVaR/Expected Shortfall)
+    cvar_95 = returns[returns <= var_95].mean()
+    cvar_99 = returns[returns <= var_99].mean()
+
+    # Tail ratio (95th percentile / 5th percentile)
+    tail_ratio = np.percentile(returns, 95) / abs(np.percentile(returns, 5)) if np.percentile(returns, 5) != 0 else 0
+
+    metrics = {
+        'worst_day': worst_day,
+        'worst_week': worst_week,
+        'worst_month': worst_month,
+        'var_95': var_95,
+        'var_99': var_99,
+        'cvar_95': cvar_95,
+        'cvar_99': cvar_99,
+        'tail_ratio': tail_ratio
+    }
+
+    # If stress scenarios provided, calculate beta
+    if stress_scenarios:
+        for scenario_name, scenario_returns in stress_scenarios.items():
+            # Align indices
+            aligned_returns = returns.reindex(scenario_returns.index).dropna()
+            aligned_scenario = scenario_returns.reindex(aligned_returns.index).dropna()
+
+            if len(aligned_returns) > 0 and len(aligned_scenario) > 0:
+                # Calculate beta
+                covariance = aligned_returns.cov(aligned_scenario)
+                variance = aligned_scenario.var()
+                beta = covariance / variance if variance > 0 else 0.0
+
+                # Calculate scenario performance
+                scenario_performance = aligned_returns.mean()
+
+                metrics[f'beta_{scenario_name}'] = beta
+                metrics[f'performance_{scenario_name}'] = scenario_performance
+
+    return metrics
