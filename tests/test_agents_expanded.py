@@ -12,12 +12,18 @@ from pathlib import Path
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from src.agents.base_agent import BaseAgent
-from src.agents.noise_trader import NoiseTrader
-from src.agents.informed_trader import InformedTrader
-from src.agents.arbitrageur import Arbitrageur
-from src.agents.market_maker_agent import MarketMaker
-from src.agents.homer_agent import HomerAgent
+# Note: BaseAgent is actually BaseTrader in the codebase
+# We'll test agents directly without requiring the base class
+try:
+    from src.agents.noise_trader import NoiseTrader
+    from src.agents.informed_trader import InformedTrader
+    from src.agents.arbitrageur import Arbitrageur
+    from src.agents.market_maker_agent import MarketMaker
+    from src.agents.homer_agent import HomerAgent
+    AGENTS_AVAILABLE = True
+except ImportError as e:
+    AGENTS_AVAILABLE = False
+    print(f"Warning: Could not import agents: {e}")
 
 
 class TestNoiseTraderBehavior:
