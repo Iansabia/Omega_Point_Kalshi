@@ -1,0 +1,23 @@
+# Minimal Agent Configuration for Testing
+
+noise_trader:
+  count: 10
+  initial_wealth: 1000
+  trade_probability: 0.1
+
+informed_trader:
+  count: 5
+  initial_wealth: 5000
+  information_quality_range: [0.6, 0.9]
+
+arbitrageur:
+  count: 0  # Disabled for minimal test
+
+market_maker:
+  count: 0  # Disabled for minimal test
+
+homer_agent:
+  count: 0  # Disabled for minimal test
+
+llm_agent:
+  count: 0  # Disabled for minimal test (no API cost)

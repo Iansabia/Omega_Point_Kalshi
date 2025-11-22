@@ -1,0 +1,11 @@
+# Minimal Configuration for Testing
+# Use this for quick unit tests and development
+
+market:
+  initial_price: 0.5
+  ticker: "TEST_MARKET"
+  fundamental_value: 0.6
+
+simulation:
+  max_steps: 100
+  collection_interval: 1

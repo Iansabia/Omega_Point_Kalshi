@@ -1,0 +1,61 @@
+# Full Agent Configuration
+# All agent types enabled with realistic parameters
+
+noise_trader:
+  count: 100
+  initial_wealth: 1000
+  trade_probability: 0.1
+  types:
+    random: 0.6      # 60% random traders
+    contrarian: 0.2  # 20% contrarian
+    trend: 0.2       # 20% trend followers
+  overconfidence_multiplier: [1.2, 1.5]  # Random in range
+
+informed_trader:
+  count: 30
+  initial_wealth: 5000
+  information_quality_range: [0.5, 1.0]
+  information_cost: 10  # Cost per information acquisition
+  trade_threshold: 0.02  # Trade if signal differs by >2%
+  strategic_delay: true  # Split large orders over time
+
+arbitrageur:
+  count: 15
+  initial_wealth: 10000
+  detection_speed_range: [0.7, 1.0]
+  min_spread_threshold: 0.01  # Minimum profitable spread
+  capital_constraints: true
+  max_leverage: 2.0
+
+market_maker:
+  count: 5
+  initial_wealth: 50000
+  spread_target: 0.02  # 2% target spread
+  target_inventory: 0
+  risk_param: 0.1  # Risk aversion
+  quote_refresh_frequency: 5  # Update quotes every 5 steps
+
+homer_agent:
+  count: 50
+  initial_wealth: 1000
+  loyalty_strength_range: [0.5, 0.9]
+  loyalty_decay_rate: 0.99  # 1% decay per step
+  reinforcement_factor: 1.05  # 5% boost on wins
+  loyal_assets:
+    - "CHI"  # 50% loyal to Chicago
+    - "GB"   # 50% loyal to Green Bay
+
+llm_agent:
+  count: 10
+  initial_wealth: 5000
+  model: "gemini-2.0-flash"
+  use_context_caching: true
+  cache_ttl: 300  # 5 minutes
+  batch_processing: true
+  batch_size: 5
+  hybrid_threshold: 0.1  # Use LLM if volatility > 0.1
+  rule_based_percentage: 0.7  # 70% rule-based for cost efficiency
+  risk_profiles:
+    - "conservative"
+    - "moderate"
+    - "aggressive"
