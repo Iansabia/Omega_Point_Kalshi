@@ -48,6 +48,7 @@ class PredictionMarketModel(mesa.Model):
         market_config = self.config.get('market', {})
         self.current_price = market_config.get('initial_price', 0.5)
         self.fundamental_value = self.current_price  # Track true value
+        self.current_ticker = market_config.get('ticker', 'MARKET')  # Current market ticker
 
         # Mesa 3.3+ doesn't use schedulers - agents are managed directly in Model
         # Agents are automatically tracked in self.agents
@@ -98,6 +99,7 @@ class PredictionMarketModel(mesa.Model):
             noise_config = self.agent_config['noise_trader']
             count = noise_config.get('count', 50)
             wealth_dist = noise_config.get('wealth_distribution', {})
+            risk_limits = noise_config.get('risk_limits', None)
 
             # Generate wealth based on distribution
             if wealth_dist.get('type') == 'lognormal':
@@ -107,7 +109,7 @@ class PredictionMarketModel(mesa.Model):
                     mean=np.log(mean), sigma=sigma, size=count
                 )
             else:
-                wealth_values = [1000.0] * count
+                wealth_values = [noise_config.get('wealth', 1000)] * count
 
             # Create agents with different strategies
             strategies = ['random', 'contrarian', 'trend']
@@ -116,7 +118,8 @@ class PredictionMarketModel(mesa.Model):
                 agent = NoiseTrader(
                     model=self,
                     strategy=strategy,
-                    initial_wealth=wealth_values[i]
+                    initial_wealth=wealth_values[i],
+                    risk_limits=risk_limits
                 )
                 # Mesa 3.3+ auto-registers agents and assigns unique_id
                 logger.debug(f"Created NoiseTrader {agent.unique_id} with strategy={strategy}, wealth={wealth_values[i]:.2f}")
@@ -127,12 +130,14 @@ class PredictionMarketModel(mesa.Model):
             count = informed_config.get('count', 5)
             wealth = informed_config.get('wealth', 10000)
             info_quality = informed_config.get('information_quality', 0.8)
+            risk_limits = informed_config.get('risk_limits', None)
 
             for i in range(count):
                 agent = InformedTrader(
                     model=self,
                     initial_wealth=wealth,
-                    information_quality=info_quality
+                    information_quality=info_quality,
+                    risk_limits=risk_limits
                 )
                 # Mesa 3.3+ auto-registers agents
                 logger.debug(f"Created InformedTrader {agent.unique_id} with quality={info_quality}")
@@ -159,12 +164,14 @@ class PredictionMarketModel(mesa.Model):
             count = mm_config.get('count', 1)
             wealth = mm_config.get('wealth', 100000)
             target_inventory = mm_config.get('target_inventory', 0)
+            risk_limits = mm_config.get('risk_limits', None)
 
             for i in range(count):
                 agent = MarketMakerAgent(
                     model=self,
                     initial_wealth=wealth,
-                    target_inventory=target_inventory
+                    target_inventory=target_inventory,
+                    risk_limits=risk_limits
                 )
                 # Mesa 3.3+ auto-registers agents
                 logger.debug(f"Created MarketMaker {agent.unique_id}")

@@ -11,8 +11,8 @@ class NoiseTrader(BaseTrader):
     Noise trader with multiple strategies: Random, Contrarian, TrendFollower.
     """
 
-    def __init__(self, model, strategy: str = "random", initial_wealth: float = 1000.0):
-        super().__init__(model, initial_wealth=initial_wealth)
+    def __init__(self, model, strategy: str = "random", initial_wealth: float = 1000.0, risk_limits=None):
+        super().__init__(model, initial_wealth=initial_wealth, risk_limits=risk_limits)
         self.strategy = strategy
         self.recency_weight = 0.7
         self.trade_probability = 0.1
