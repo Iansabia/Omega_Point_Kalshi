@@ -10,9 +10,9 @@ class InformedTrader(BaseTrader):
     """
     Informed trader who receives a noisy signal of the true value.
     """
-    
-    def __init__(self, model, initial_wealth: float = 10000.0, information_quality: float = 0.8):
-        super().__init__(model, initial_wealth=initial_wealth)
+
+    def __init__(self, model, initial_wealth: float = 10000.0, information_quality: float = 0.8, risk_limits=None):
+        super().__init__(model, initial_wealth=initial_wealth, risk_limits=risk_limits)
         self.information_quality = information_quality # [0.5, 1.0]
         self.true_value = 0.5 # This should come from model or external source
 

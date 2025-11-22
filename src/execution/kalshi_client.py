@@ -8,8 +8,8 @@ class KalshiClient:
     """
     Client for interacting with the Kalshi API (v2).
     """
-    
-    BASE_URL = "https://trading-api.kalshi.com/trade-api/v2"
+
+    BASE_URL = "https://api.elections.kalshi.com/trade-api/v2"
     
     def __init__(self, api_key: str = None, email: str = None, password: str = None):
         self.api_key = api_key or os.getenv("KALSHI_API_KEY")
@@ -113,3 +113,163 @@ class KalshiClient:
         url = f"{self.BASE_URL}/portfolio/balance"
         response = requests.get(url, headers=self._get_headers())
         return response.json()
+
+    def get_markets(
+        self,
+        series_ticker: Optional[str] = None,
+        status: Optional[str] = None,
+        event_ticker: Optional[str] = None,
+        limit: int = 200,
+        cursor: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """
+        Get markets with optional filters.
+
+        Args:
+            series_ticker: Filter by series (e.g., 'HIGHFB' for NFL)
+            status: Comma-separated list: 'unopened', 'open', 'closed', 'settled'
+            event_ticker: Filter by specific event
+            limit: Max results per page (default 200)
+            cursor: Pagination cursor
+
+        Returns:
+            Dict with 'markets' list and 'cursor' for pagination
+        """
+        url = f"{self.BASE_URL}/markets"
+        params = {"limit": limit}
+
+        if series_ticker:
+            params["series_ticker"] = series_ticker
+        if status:
+            params["status"] = status
+        if event_ticker:
+            params["event_ticker"] = event_ticker
+        if cursor:
+            params["cursor"] = cursor
+
+        response = requests.get(url, params=params, headers=self._get_headers())
+
+        if response.status_code == 200:
+            return response.json()
+        else:
+            print(f"Error fetching markets: {response.status_code} - {response.text}")
+            return {"markets": [], "cursor": None}
+
+    def get_events(
+        self,
+        series_ticker: Optional[str] = None,
+        status: Optional[str] = None,
+        limit: int = 200,
+        cursor: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """
+        Get events with optional filters.
+
+        Args:
+            series_ticker: Filter by series
+            status: Comma-separated list: 'open', 'closed', 'settled'
+            limit: Max results per page
+            cursor: Pagination cursor
+
+        Returns:
+            Dict with 'events' list and 'cursor' for pagination
+        """
+        url = f"{self.BASE_URL}/events"
+        params = {"limit": limit}
+
+        if series_ticker:
+            params["series_ticker"] = series_ticker
+        if status:
+            params["status"] = status
+        if cursor:
+            params["cursor"] = cursor
+
+        response = requests.get(url, params=params, headers=self._get_headers())
+
+        if response.status_code == 200:
+            return response.json()
+        else:
+            print(f"Error fetching events: {response.status_code} - {response.text}")
+            return {"events": [], "cursor": None}
+
+    def get_market_candlesticks(
+        self,
+        series_ticker: str,
+        market_ticker: str,
+        period_interval: int = 60,
+        start_ts: Optional[int] = None,
+        end_ts: Optional[int] = None
+    ) -> Dict[str, Any]:
+        """
+        Get historical candlestick data for a market.
+
+        Args:
+            series_ticker: Series ticker (e.g., 'HIGHFB')
+            market_ticker: Market ticker (e.g., 'HIGHFB-24SEP15-B-KC')
+            period_interval: Candlestick interval in minutes (1, 60, or 1440)
+            start_ts: Start timestamp (Unix time in seconds)
+            end_ts: End timestamp (Unix time in seconds)
+
+        Returns:
+            Dict with 'candlesticks' list containing OHLC data
+        """
+        url = f"{self.BASE_URL}/series/{series_ticker}/markets/{market_ticker}/candlesticks"
+        params = {"period_interval": period_interval}
+
+        if start_ts:
+            params["start_ts"] = start_ts
+        if end_ts:
+            params["end_ts"] = end_ts
+
+        response = requests.get(url, params=params, headers=self._get_headers())
+
+        if response.status_code == 200:
+            return response.json()
+        else:
+            print(f"Error fetching candlesticks for {market_ticker}: {response.status_code} - {response.text}")
+            return {"candlesticks": []}
+
+    def get_all_markets_paginated(
+        self,
+        series_ticker: Optional[str] = None,
+        status: Optional[str] = None,
+        max_results: Optional[int] = None
+    ) -> list:
+        """
+        Get all markets using pagination.
+
+        Args:
+            series_ticker: Filter by series
+            status: Filter by status
+            max_results: Maximum total results (None = unlimited)
+
+        Returns:
+            List of all markets
+        """
+        all_markets = []
+        cursor = None
+        count = 0
+
+        while True:
+            response = self.get_markets(
+                series_ticker=series_ticker,
+                status=status,
+                cursor=cursor
+            )
+
+            markets = response.get("markets", [])
+            all_markets.extend(markets)
+            count += len(markets)
+
+            # Check if we've hit max or no more pages
+            if max_results and count >= max_results:
+                break
+
+            cursor = response.get("cursor")
+            if not cursor:
+                break
+
+            # Rate limiting - be nice to the API
+            time.sleep(0.1)
+
+        return all_markets

@@ -10,9 +10,9 @@ class MarketMakerAgent(BaseTrader):
     """
     Market Maker using Avellaneda-Stoikov framework.
     """
-    
-    def __init__(self, model, initial_wealth: float = 100000.0, target_inventory: float = 0.0, risk_param: float = 0.1):
-        super().__init__(model, initial_wealth=initial_wealth)
+
+    def __init__(self, model, initial_wealth: float = 100000.0, target_inventory: float = 0.0, risk_param: float = 0.1, risk_limits=None):
+        super().__init__(model, initial_wealth=initial_wealth, risk_limits=risk_limits)
         self.risk_param = risk_param
         self.target_inventory = target_inventory
         self.inventory = 0.0 # Tracks current inventory
