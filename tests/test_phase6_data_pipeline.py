@@ -239,7 +239,7 @@ class TestDataQuality:
         print("="*70)
 
         # Test outlier detection
-        def detect_outliers(data, threshold=3):
+        def detect_outliers(data, threshold=2.5):
             """Detect outliers using z-score"""
             if len(data) < 2:
                 return []
@@ -253,8 +253,8 @@ class TestDataQuality:
             z_scores = np.abs((data - mean) / std)
             return np.where(z_scores > threshold)[0]
 
-        test_data = np.array([1, 2, 2, 3, 2, 3, 100, 2, 3])  # 100 is outlier
-        outliers = detect_outliers(test_data)
+        test_data = np.array([1, 2, 2, 3, 2, 3, 100, 2, 3])  # 100 is outlier (z-score ~2.83)
+        outliers = detect_outliers(test_data, threshold=2.5)
 
         print(f"✓ Outlier Detection:")
         print(f"  Data: {test_data}")
