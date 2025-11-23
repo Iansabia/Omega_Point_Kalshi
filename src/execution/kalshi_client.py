@@ -3,23 +3,77 @@ import requests
 import json
 from typing import Dict, Any, Optional
 import time
+import base64
+import hashlib
+from cryptography.hazmat.primitives import hashes, serialization
+from cryptography.hazmat.primitives.asymmetric import padding, rsa
+from cryptography.hazmat.backends import default_backend
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 class KalshiClient:
     """
     Client for interacting with the Kalshi API (v2).
+
+    Supports two authentication methods:
+    1. API Key (recommended for production): Uses RSA signatures
+    2. Email/Password (legacy): Uses session tokens
     """
 
     BASE_URL = "https://api.elections.kalshi.com/trade-api/v2"
-    
-    def __init__(self, api_key: str = None, email: str = None, password: str = None):
-        self.api_key = api_key or os.getenv("KALSHI_API_KEY")
-        self.email = email or os.getenv("KALSHI_EMAIL")
-        self.password = password or os.getenv("KALSHI_PASSWORD")
+
+    def __init__(self, api_key: str = None, private_key_path: str = None,
+                 email: str = None, password: str = None):
+        """
+        Initialize Kalshi client with API key or email/password.
+
+        API Key authentication (preferred):
+            api_key: Your Kalshi API key ID
+            private_key_path: Path to your RSA private key file (.pem)
+
+        Email/Password authentication (fallback):
+            email: Your Kalshi account email
+            password: Your Kalshi account password
+        """
+        # API Key authentication
+        self.api_key_id = (api_key or os.getenv("KALSHI_API_KEY_ID") or "").strip('"\'')
+        self.private_key_path = (private_key_path or os.getenv("KALSHI_PRIVATE_KEY_PATH") or "").strip('"\'')
+        self.private_key = None
+
+        # Email/Password authentication (fallback)
+        self.email = (email or os.getenv("KALSHI_EMAIL") or "").strip('"\'')
+        self.password = (password or os.getenv("KALSHI_PASSWORD") or "").strip('"\'')
         self.token = None
         self.member_id = None
-        
-        if self.email and self.password:
+
+        # Try API key authentication first
+        if self.api_key_id and self.private_key_path and self.private_key_path != "":
+            self._load_private_key()
+            print(f"Using API key authentication (key ID: {self.api_key_id[:8]}...)")
+        # Fallback to email/password
+        elif self.email and self.password:
             self.authenticate()
+            print("Using email/password authentication (consider upgrading to API keys)")
+        else:
+            print("Warning: No authentication credentials provided")
+
+    def _load_private_key(self):
+        """Load RSA private key from file."""
+        try:
+            with open(self.private_key_path, 'rb') as key_file:
+                self.private_key = serialization.load_pem_private_key(
+                    key_file.read(),
+                    password=None,
+                    backend=default_backend()
+                )
+        except FileNotFoundError:
+            print(f"Error: Private key file not found at {self.private_key_path}")
+            self.private_key = None
+        except Exception as e:
+            print(f"Error loading private key: {e}")
+            self.private_key = None
 
     def authenticate(self):
         """
@@ -39,26 +93,71 @@ class KalshiClient:
         else:
             print(f"Authentication failed: {response.text}")
 
-    def _get_headers(self) -> Dict[str, str]:
-        return {
-            "Authorization": f"Bearer {self.token}" if self.token else "",
+    def _sign_request(self, method: str, path: str, body: str = "") -> str:
+        """
+        Sign a request using RSA private key.
+
+        Args:
+            method: HTTP method (GET, POST, etc.)
+            path: API path (e.g., /trade-api/v2/markets)
+            body: Request body (JSON string, empty for GET requests)
+
+        Returns:
+            Base64-encoded signature
+        """
+        # Create signature message: METHOD + path + body
+        message = f"{method}{path}{body}"
+
+        # Sign with private key
+        signature = self.private_key.sign(
+            message.encode('utf-8'),
+            padding.PKCS1v15(),
+            hashes.SHA256()
+        )
+
+        # Return base64-encoded signature
+        return base64.b64encode(signature).decode('utf-8')
+
+    def _get_headers(self, method: str = "GET", path: str = "", body: str = "") -> Dict[str, str]:
+        """
+        Get request headers with authentication.
+
+        Uses API key authentication if available, otherwise falls back to token auth.
+        """
+        headers = {
             "Content-Type": "application/json"
         }
+
+        # Use API key authentication if available
+        if self.private_key and self.api_key_id:
+            timestamp = str(int(time.time() * 1000))  # Milliseconds
+            signature = self._sign_request(method, path, body)
+
+            headers["KALSHI-ACCESS-KEY"] = self.api_key_id
+            headers["KALSHI-ACCESS-SIGNATURE"] = signature
+            headers["KALSHI-ACCESS-TIMESTAMP"] = timestamp
+        # Fallback to token authentication
+        elif self.token:
+            headers["Authorization"] = f"Bearer {self.token}"
+
+        return headers
 
     def get_market_data(self, ticker: str) -> Dict[str, Any]:
         """
         Get market details and current order book.
         """
         # Get market details
+        path = f"/trade-api/v2/markets/{ticker}"
         url = f"{self.BASE_URL}/markets/{ticker}"
-        response = requests.get(url, headers=self._get_headers())
+        response = requests.get(url, headers=self._get_headers("GET", path))
         market_data = response.json() if response.status_code == 200 else {}
-        
+
         # Get order book
+        book_path = f"/trade-api/v2/markets/{ticker}/orderbook"
         book_url = f"{self.BASE_URL}/markets/{ticker}/orderbook"
-        book_response = requests.get(book_url, headers=self._get_headers())
+        book_response = requests.get(book_url, headers=self._get_headers("GET", book_path))
         book_data = book_response.json() if book_response.status_code == 200 else {}
-        
+
         return {
             "market": market_data,
             "orderbook": book_data
@@ -70,30 +169,14 @@ class KalshiClient:
         side: 'yes' or 'no' (Kalshi uses 'yes'/'no' for binary options)
         price: in cents (1-99)
         """
+        path = "/trade-api/v2/portfolio/orders"
         url = f"{self.BASE_URL}/portfolio/orders"
-        
-        # Map side to Kalshi format if needed
-        action = "buy" # Usually we buy 'yes' or buy 'no' contracts
-        # Wait, Kalshi structure: You buy 'yes' contracts or 'no' contracts?
-        # Actually, you usually buy 'yes' or 'no' side.
-        
-        payload = {
-            "ticker": ticker,
-            "action": action,
-            "type": "limit",
-            "side": side.lower(), # 'yes' or 'no'
-            "count": count,
-            "yes_price": price if side.lower() == 'yes' else None,
-            "no_price": price if side.lower() == 'no' else None,
-            # Note: API might require specific price field depending on side
-            # Simplified for now based on typical binary API
-        }
-        
+
         # Correction for Kalshi v2:
         # "side" is "yes" or "no".
         # "action" is "buy" or "sell".
         # If we are opening a position, it's "buy".
-        
+
         payload = {
             "ticker": ticker,
             "action": "buy",
@@ -103,15 +186,17 @@ class KalshiClient:
             "price": price # Price is usually specified for the side you are buying
         }
 
-        response = requests.post(url, json=payload, headers=self._get_headers())
+        body = json.dumps(payload)
+        response = requests.post(url, data=body, headers=self._get_headers("POST", path, body))
         return response.json()
 
     def get_balance(self) -> Dict[str, Any]:
         """
         Get portfolio balance.
         """
+        path = "/trade-api/v2/portfolio/balance"
         url = f"{self.BASE_URL}/portfolio/balance"
-        response = requests.get(url, headers=self._get_headers())
+        response = requests.get(url, headers=self._get_headers("GET", path))
         return response.json()
 
     def get_markets(
@@ -147,7 +232,8 @@ class KalshiClient:
         if cursor:
             params["cursor"] = cursor
 
-        response = requests.get(url, params=params, headers=self._get_headers())
+        path = "/trade-api/v2/markets"
+        response = requests.get(url, params=params, headers=self._get_headers("GET", path))
 
         if response.status_code == 200:
             return response.json()
@@ -184,7 +270,8 @@ class KalshiClient:
         if cursor:
             params["cursor"] = cursor
 
-        response = requests.get(url, params=params, headers=self._get_headers())
+        path = "/trade-api/v2/events"
+        response = requests.get(url, params=params, headers=self._get_headers("GET", path))
 
         if response.status_code == 200:
             return response.json()
@@ -221,7 +308,8 @@ class KalshiClient:
         if end_ts:
             params["end_ts"] = end_ts
 
-        response = requests.get(url, params=params, headers=self._get_headers())
+        path = f"/trade-api/v2/series/{series_ticker}/markets/{market_ticker}/candlesticks"
+        response = requests.get(url, params=params, headers=self._get_headers("GET", path))
 
         if response.status_code == 200:
             return response.json()
