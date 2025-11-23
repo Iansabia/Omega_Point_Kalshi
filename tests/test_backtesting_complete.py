@@ -13,10 +13,20 @@ from pathlib import Path
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
+# Check for scipy availability
+try:
+    import scipy
+    HAS_SCIPY = True
+except ImportError:
+    HAS_SCIPY = False
+
+skip_if_no_scipy = pytest.mark.skipif(not HAS_SCIPY, reason="scipy not installed")
+
 
 class TestWalkForwardOptimization:
     """Test Phase 8.2: Walk-Forward Optimization"""
 
+    @skip_if_no_scipy
     def test_walk_forward_window_creation(self):
         """Test creation of walk-forward windows"""
         print("\n" + "="*70)
@@ -52,6 +62,7 @@ class TestWalkForwardOptimization:
 
         print(f"\n  ✓ PASS: Walk-forward windows created correctly")
 
+    @skip_if_no_scipy
     def test_anchored_vs_rolling_windows(self):
         """Test difference between anchored and rolling windows"""
         print("\n" + "="*70)
@@ -87,6 +98,7 @@ class TestWalkForwardOptimization:
 
         print(f"\n  ✓ PASS: Anchored and rolling windows work correctly")
 
+    @skip_if_no_scipy
     def test_walk_forward_optimization(self):
         """Test complete walk-forward optimization"""
         print("\n" + "="*70)
@@ -165,6 +177,7 @@ class TestWalkForwardOptimization:
 
         print(f"\n  ✓ PASS: Walk-forward optimization working")
 
+    @skip_if_no_scipy
     def test_ensemble_parameter_selection(self):
         """Test ensemble parameter selection from multiple folds"""
         print("\n" + "="*70)
