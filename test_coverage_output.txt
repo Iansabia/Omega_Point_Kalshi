@@ -1,0 +1,612 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.13.5, pytest-8.3.4, pluggy-1.5.0 -- /opt/anaconda3/bin/python
+cachedir: .pytest_cache
+rootdir: /Users/jaredmarcus/projects/omega_point/Omega_Point_Kalshi
+configfile: pytest.ini
+plugins: anyio-4.7.0, cov-7.0.0
+collecting ... collected 154 items
+
+tests/test_agents.py::TestNoiseTrader::test_noise_trader_initialization_random PASSED [  0%]
+tests/test_agents.py::TestNoiseTrader::test_noise_trader_initialization_contrarian PASSED [  1%]
+tests/test_agents.py::TestNoiseTrader::test_noise_trader_initialization_trend PASSED [  1%]
+tests/test_agents.py::TestNoiseTrader::test_noise_trader_observe_market PASSED [  2%]
+tests/test_agents.py::TestNoiseTrader::test_noise_trader_make_decision_random FAILED [  3%]
+tests/test_agents.py::TestNoiseTrader::test_noise_trader_wealth_tracking PASSED [  3%]
+tests/test_agents.py::TestNoiseTrader::test_noise_trader_pnl_calculation PASSED [  4%]
+tests/test_agents.py::TestInformedTrader::test_informed_trader_initialization PASSED [  5%]
+tests/test_agents.py::TestInformedTrader::test_informed_trader_information_quality PASSED [  5%]
+tests/test_agents.py::TestInformedTrader::test_informed_trader_observe_market PASSED [  6%]
+tests/test_agents.py::TestInformedTrader::test_informed_trader_decision_logic PASSED [  7%]
+tests/test_agents.py::TestInformedTrader::test_informed_trader_wealth_constraint PASSED [  7%]
+tests/test_agents.py::TestArbitrageur::test_arbitrageur_initialization PASSED [  8%]
+tests/test_agents.py::TestArbitrageur::test_arbitrageur_detection_speed PASSED [  9%]
+tests/test_agents.py::TestArbitrageur::test_arbitrageur_spread_detection PASSED [  9%]
+tests/test_agents.py::TestArbitrageur::test_arbitrageur_min_spread_threshold PASSED [ 10%]
+tests/test_agents.py::TestMarketMakerAgent::test_market_maker_initialization PASSED [ 11%]
+tests/test_agents.py::TestMarketMakerAgent::test_market_maker_inventory_tracking PASSED [ 11%]
+tests/test_agents.py::TestMarketMakerAgent::test_market_maker_target_inventory PASSED [ 12%]
+tests/test_agents.py::TestMarketMakerAgent::test_market_maker_quote_pricing PASSED [ 12%]
+tests/test_agents.py::TestMarketMakerAgent::test_market_maker_risk_parameter PASSED [ 13%]
+tests/test_agents.py::TestHomerAgent::test_homer_agent_initialization PASSED [ 14%]
+tests/test_agents.py::TestHomerAgent::test_homer_agent_loyalty_strength PASSED [ 14%]
+tests/test_agents.py::TestHomerAgent::test_homer_agent_loyalty_asset PASSED [ 15%]
+tests/test_agents.py::TestHomerAgent::test_homer_agent_observe_market PASSED [ 16%]
+tests/test_agents.py::TestHomerAgent::test_homer_agent_biased_decision PASSED [ 16%]
+tests/test_agents.py::TestLLMAgent::test_llm_agent_initialization PASSED [ 17%]
+tests/test_agents.py::TestLLMAgent::test_llm_agent_risk_profiles PASSED  [ 18%]
+tests/test_agents.py::TestLLMAgent::test_llm_agent_cost_tracking PASSED  [ 18%]
+tests/test_agents.py::TestLLMAgent::test_llm_agent_should_use_llm PASSED [ 19%]
+tests/test_agents.py::TestLLMAgent::test_llm_agent_observe_market PASSED [ 20%]
+tests/test_agents.py::TestLLMAgent::test_llm_agent_rule_based_fallback PASSED [ 20%]
+tests/test_agents.py::TestBaseAgent::test_agent_trader_id PASSED         [ 21%]
+tests/test_agents.py::TestBaseAgent::test_agent_portfolio_value PASSED   [ 22%]
+tests/test_agents.py::TestBaseAgent::test_agent_trade_history PASSED     [ 22%]
+tests/test_agents.py::TestBaseAgent::test_agent_step_method PASSED       [ 23%]
+tests/test_agents_expanded.py::TestNoiseTraderBehavior::test_noise_trader_initialization FAILED [ 24%]
+tests/test_agents_expanded.py::TestNoiseTraderBehavior::test_noise_trader_random_decisions FAILED [ 24%]
+tests/test_agents_expanded.py::TestNoiseTraderBehavior::test_noise_trader_position_tracking FAILED [ 25%]
+tests/test_agents_expanded.py::TestInformedTraderBehavior::test_informed_trader_initialization FAILED [ 25%]
+tests/test_agents_expanded.py::TestInformedTraderBehavior::test_informed_trader_uses_fundamental_value FAILED [ 26%]
+tests/test_agents_expanded.py::TestArbitrageurBehavior::test_arbitrageur_initialization FAILED [ 27%]
+tests/test_agents_expanded.py::TestArbitrageurBehavior::test_arbitrageur_detects_arbitrage_opportunities FAILED [ 27%]
+tests/test_agents_expanded.py::TestMarketMakerBehavior::test_market_maker_initialization FAILED [ 28%]
+tests/test_agents_expanded.py::TestMarketMakerBehavior::test_market_maker_quotes_two_sided_market FAILED [ 29%]
+tests/test_agents_expanded.py::TestMarketMakerBehavior::test_market_maker_inventory_management FAILED [ 29%]
+tests/test_agents_expanded.py::TestHomerAgentBehavior::test_homer_agent_initialization FAILED [ 30%]
+tests/test_agents_expanded.py::TestHomerAgentBehavior::test_homer_agent_loyalty_bias FAILED [ 31%]
+tests/test_agents_expanded.py::TestAgentInteractions::test_multiple_agent_types_coexist FAILED [ 31%]
+tests/test_agents_expanded.py::TestAgentInteractions::test_agent_wealth_distribution FAILED [ 32%]
+tests/test_agents_expanded.py::TestAgentEdgeCases::test_agent_with_zero_cash FAILED [ 33%]
+tests/test_agents_expanded.py::TestAgentEdgeCases::test_agent_with_negative_position FAILED [ 33%]
+tests/test_agents_expanded.py::TestAgentEdgeCases::test_extreme_risk_aversion FAILED [ 34%]
+tests/test_backtesting_complete.py::TestWalkForwardOptimization::test_walk_forward_window_creation PASSED [ 35%]
+tests/test_backtesting_complete.py::TestWalkForwardOptimization::test_anchored_vs_rolling_windows PASSED [ 35%]
+tests/test_backtesting_complete.py::TestWalkForwardOptimization::test_walk_forward_optimization PASSED [ 36%]
+tests/test_backtesting_complete.py::TestWalkForwardOptimization::test_ensemble_parameter_selection PASSED [ 37%]
+tests/test_backtesting_complete.py::TestMonteCarloSimulation::test_trade_resampling PASSED [ 37%]
+tests/test_backtesting_complete.py::TestMonteCarloSimulation::test_confidence_intervals PASSED [ 38%]
+tests/test_backtesting_complete.py::TestMonteCarloSimulation::test_probability_of_ruin PASSED [ 38%]
+tests/test_backtesting_complete.py::TestMonteCarloSimulation::test_monte_carlo_report_generation PASSED [ 39%]
+tests/test_backtesting_complete.py::TestPerformanceMetrics::test_sharpe_ratio_calculation PASSED [ 40%]
+tests/test_backtesting_complete.py::TestPerformanceMetrics::test_sortino_and_calmar_ratios PASSED [ 40%]
+tests/test_backtesting_complete.py::TestPerformanceMetrics::test_brier_score_calculation PASSED [ 41%]
+tests/test_backtesting_complete.py::TestPerformanceMetrics::test_log_loss_calculation PASSED [ 42%]
+tests/test_backtesting_complete.py::TestPerformanceMetrics::test_comprehensive_performance_report PASSED [ 42%]
+tests/test_backtesting_complete.py::TestPerformanceMetrics::test_prediction_market_calibration PASSED [ 43%]
+tests/test_integration_full.py::TestOrderBookIntegration::test_order_book_basic_operations FAILED [ 44%]
+tests/test_integration_full.py::TestOrderBookIntegration::test_order_matching FAILED [ 44%]
+tests/test_integration_full.py::TestBacktestingIntegration::test_backtest_with_performance_metrics PASSED [ 45%]
+tests/test_integration_full.py::TestBacktestingIntegration::test_monte_carlo_with_backtest_results PASSED [ 46%]
+tests/test_integration_full.py::TestDataPipelineIntegration::test_feature_engineering_pipeline FAILED [ 46%]
+tests/test_integration_full.py::TestDataPipelineIntegration::test_data_quality_checks FAILED [ 47%]
+tests/test_integration_full.py::TestRiskManagementIntegration::test_risk_limits_enforcement PASSED [ 48%]
+tests/test_integration_full.py::TestRiskManagementIntegration::test_drawdown_monitoring PASSED [ 48%]
+tests/test_integration_full.py::TestEndToEndSimulation::test_minimal_simulation_workflow PASSED [ 49%]
+tests/test_integration_full.py::TestEndToEndSimulation::test_multi_component_integration FAILED [ 50%]
+tests/test_market_model.py::TestPredictionMarketModel::test_model_initialization_minimal PASSED [ 50%]
+tests/test_market_model.py::TestPredictionMarketModel::test_model_initialization_with_config PASSED [ 51%]
+tests/test_market_model.py::TestPredictionMarketModel::test_model_initialization_with_seed PASSED [ 51%]
+tests/test_market_model.py::TestPredictionMarketModel::test_initialize_noise_traders PASSED [ 52%]
+tests/test_market_model.py::TestPredictionMarketModel::test_initialize_informed_traders PASSED [ 53%]
+tests/test_market_model.py::TestPredictionMarketModel::test_initialize_arbitrageurs PASSED [ 53%]
+tests/test_market_model.py::TestPredictionMarketModel::test_initialize_market_makers PASSED [ 54%]
+tests/test_market_model.py::TestPredictionMarketModel::test_initialize_homer_agents PASSED [ 55%]
+tests/test_market_model.py::TestPredictionMarketModel::test_initialize_llm_agents PASSED [ 55%]
+tests/test_market_model.py::TestPredictionMarketModel::test_initialize_mixed_agents PASSED [ 56%]
+tests/test_market_model.py::TestPredictionMarketModel::test_step_execution PASSED [ 57%]
+tests/test_market_model.py::TestPredictionMarketModel::test_multi_step_simulation PASSED [ 57%]
+tests/test_market_model.py::TestPredictionMarketModel::test_get_spread PASSED [ 58%]
+tests/test_market_model.py::TestPredictionMarketModel::test_calculate_volume PASSED [ 59%]
+tests/test_market_model.py::TestPredictionMarketModel::test_datacollector_model_reporters PASSED [ 59%]
+tests/test_market_model.py::TestPredictionMarketModel::test_datacollector_agent_reporters PASSED [ 60%]
+tests/test_market_model.py::TestPredictionMarketModel::test_matching_engine_linked_to_model PASSED [ 61%]
+tests/test_market_model.py::TestPredictionMarketModel::test_reproducibility_with_seed PASSED [ 61%]
+tests/test_market_model.py::TestPredictionMarketModel::test_agent_wealth_conservation PASSED [ 62%]
+tests/test_orderbook.py::TestOrderBook::test_orderbook_initialization PASSED [ 62%]
+tests/test_orderbook.py::TestOrderBook::test_add_buy_order PASSED        [ 63%]
+tests/test_orderbook.py::TestOrderBook::test_add_sell_order PASSED       [ 64%]
+tests/test_orderbook.py::TestOrderBook::test_price_time_priority_bids PASSED [ 64%]
+tests/test_orderbook.py::TestOrderBook::test_price_time_priority_asks PASSED [ 65%]
+tests/test_orderbook.py::TestOrderBook::test_time_priority_same_price PASSED [ 66%]
+tests/test_orderbook.py::TestOrderBook::test_remove_order PASSED         [ 66%]
+tests/test_orderbook.py::TestOrderBook::test_get_spread PASSED           [ 67%]
+tests/test_orderbook.py::TestOrderBook::test_get_mid_price PASSED        [ 68%]
+tests/test_orderbook.py::TestOrderBook::test_get_depth PASSED            [ 68%]
+tests/test_orderbook.py::TestOrderBook::test_get_imbalance PASSED        [ 69%]
+tests/test_orderbook.py::TestMatchingEngine::test_matching_engine_initialization PASSED [ 70%]
+tests/test_orderbook.py::TestMatchingEngine::test_limit_order_no_match PASSED [ 70%]
+tests/test_orderbook.py::TestMatchingEngine::test_limit_order_full_match PASSED [ 71%]
+tests/test_orderbook.py::TestMatchingEngine::test_limit_order_partial_match PASSED [ 72%]
+tests/test_orderbook.py::TestMatchingEngine::test_market_order_execution PASSED [ 72%]
+tests/test_orderbook.py::TestMatchingEngine::test_price_improvement PASSED [ 73%]
+tests/test_orderbook.py::TestMatchingEngine::test_fok_order_success PASSED [ 74%]
+tests/test_orderbook.py::TestMatchingEngine::test_fok_order_failure PASSED [ 74%]
+tests/test_orderbook.py::TestMatchingEngine::test_ioc_order PASSED       [ 75%]
+tests/test_orderbook.py::TestMatchingEngine::test_multiple_levels_matching PASSED [ 75%]
+tests/test_orderbook.py::TestMatchingEngine::test_self_trade_prevention PASSED [ 76%]
+tests/test_orderbook.py::TestOrder::test_order_creation PASSED           [ 77%]
+tests/test_orderbook.py::TestOrder::test_order_fill PASSED               [ 77%]
+tests/test_orderbook.py::TestOrder::test_market_order_no_price PASSED    [ 78%]
+tests/test_phase6_data_pipeline.py::TestKalshiIntegration::test_kalshi_client_initialization SKIPPED [ 79%]
+tests/test_phase6_data_pipeline.py::TestKalshiIntegration::test_kalshi_market_data_fetch SKIPPED [ 79%]
+tests/test_phase6_data_pipeline.py::TestNFLDataPipeline::test_nfl_data_structure_exists PASSED [ 80%]
+tests/test_phase6_data_pipeline.py::TestNFLDataPipeline::test_nfl_data_loading_capability PASSED [ 81%]
+tests/test_phase6_data_pipeline.py::TestFeatureEngineering::test_basic_feature_calculations PASSED [ 81%]
+tests/test_phase6_data_pipeline.py::TestDataQuality::test_data_validation FAILED [ 82%]
+tests/test_phase6_data_pipeline.py::TestIntegrationReadiness::test_end_to_end_capability PASSED [ 83%]
+tests/test_phase7_execution.py::TestRiskManager::test_risk_manager_initialization FAILED [ 83%]
+tests/test_phase7_execution.py::TestRiskManager::test_position_limit_enforcement FAILED [ 84%]
+tests/test_phase7_execution.py::TestRiskManager::test_drawdown_monitoring FAILED [ 85%]
+tests/test_phase7_execution.py::TestRiskManager::test_kill_switch PASSED [ 85%]
+tests/test_phase7_execution.py::TestTransactionCost::test_market_impact_estimation PASSED [ 86%]
+tests/test_phase7_execution.py::TestTransactionCost::test_slippage_simulation PASSED [ 87%]
+tests/test_phase7_execution.py::TestTransactionCost::test_total_transaction_cost PASSED [ 87%]
+tests/test_phase7_execution.py::TestOrderRouter::test_order_routing_logic PASSED [ 88%]
+tests/test_phase7_execution.py::TestSignalGenerator::test_signal_filtering PASSED [ 88%]
+tests/test_phase7_execution.py::TestSignalGenerator::test_signal_latency_adjustment PASSED [ 89%]
+tests/test_validation_suite.py::TestPhase2JumpDiffusion::test_simulate_price_paths_fat_tails FAILED [ 90%]
+tests/test_validation_suite.py::TestPhase2JumpDiffusion::test_calibration_runs FAILED [ 90%]
+tests/test_validation_suite.py::TestPhase2Sentiment::test_sentiment_analysis FAILED [ 91%]
+tests/test_validation_suite.py::TestPhase2Sentiment::test_panic_coefficient FAILED [ 92%]
+tests/test_validation_suite.py::TestPhase2Microstructure::test_kyles_lambda PASSED [ 92%]
+tests/test_validation_suite.py::TestPhase2Microstructure::test_spread_calculation PASSED [ 93%]
+tests/test_validation_suite.py::TestPhase2Microstructure::test_price_impact_square_root_law PASSED [ 94%]
+tests/test_validation_suite.py::TestPhase2BehavioralBiases::test_recency_bias PASSED [ 94%]
+tests/test_validation_suite.py::TestPhase2BehavioralBiases::test_herding_coefficient PASSED [ 95%]
+tests/test_validation_suite.py::TestPhase3MarketModel::test_minimal_model_10_agents_100_steps FAILED [ 96%]
+tests/test_validation_suite.py::TestPhase3MarketModel::test_data_collection FAILED [ 96%]
+tests/test_validation_suite.py::TestPhase3Agents::test_noise_traders_exist FAILED [ 97%]
+tests/test_validation_suite.py::TestPhase3Agents::test_informed_traders_exist FAILED [ 98%]
+tests/test_validation_suite.py::TestPhase3Agents::test_arbitrageurs_exist FAILED [ 98%]
+tests/test_validation_suite.py::TestPhase3Agents::test_market_makers_exist FAILED [ 99%]
+tests/test_validation_suite.py::TestPhase3Agents::test_homer_agents_exist FAILED [100%]
+ERROR: Coverage failure: total of 56 is less than fail-under=70
+
+
+=================================== FAILURES ===================================
+____________ TestNoiseTrader.test_noise_trader_make_decision_random ____________
+tests/test_agents.py:104: in test_noise_trader_make_decision_random
+    assert orders_submitted > 0, f"Expected at least 1 order in 100 tries, got {orders_submitted}"
+E   AssertionError: Expected at least 1 order in 100 tries, got 0
+E   assert 0 > 0
+___________ TestNoiseTraderBehavior.test_noise_trader_initialization ___________
+tests/test_agents_expanded.py:38: in test_noise_trader_initialization
+    agent = NoiseTrader(
+E   TypeError: NoiseTrader.__init__() got an unexpected keyword argument 'unique_id'
+----------------------------- Captured stdout call -----------------------------
+
+======================================================================
+TEST: Noise Trader Initialization
+======================================================================
+__________ TestNoiseTraderBehavior.test_noise_trader_random_decisions __________
+tests/test_agents_expanded.py:63: in test_noise_trader_random_decisions
+    agent = NoiseTrader(
+E   TypeError: NoiseTrader.__init__() got an unexpected keyword argument 'unique_id'
+----------------------------- Captured stdout call -----------------------------
+
+======================================================================
+TEST: Noise Trader Random Decisions
+======================================================================
+_________ TestNoiseTraderBehavior.test_noise_trader_position_tracking __________
+tests/test_agents_expanded.py:98: in test_noise_trader_position_tracking
+    agent = NoiseTrader(
+E   TypeError: NoiseTrader.__init__() got an unexpected keyword argument 'unique_id'
+----------------------------- Captured stdout call -----------------------------
+
+======================================================================
+TEST: Noise Trader Position Tracking
+======================================================================
+________ TestInformedTraderBehavior.test_informed_trader_initialization ________
+tests/test_agents_expanded.py:130: in test_informed_trader_initialization
+    agent = InformedTrader(
+E   TypeError: InformedTrader.__init__() got an unexpected keyword argument 'unique_id'
+----------------------------- Captured stdout call -----------------------------
+
+======================================================================
+TEST: Informed Trader Initialization
+======================================================================
+____ TestInformedTraderBehavior.test_informed_trader_uses_fundamental_value ____
+tests/test_agents_expanded.py:152: in test_informed_trader_uses_fundamental_value
+    agent = InformedTrader(
+E   TypeError: InformedTrader.__init__() got an unexpected keyword argument 'unique_id'
+----------------------------- Captured stdout call -----------------------------
+
+======================================================================
+TEST: Informed Trader Fundamental Analysis
+======================================================================
+___________ TestArbitrageurBehavior.test_arbitrageur_initialization ____________
+tests/test_agents_expanded.py:207: in test_arbitrageur_initialization
+    agent = Arbitrageur(
+E   TypeError: Arbitrageur.__init__() got an unexpected keyword argument 'unique_id'
+----------------------------- Captured stdout call -----------------------------
+
+======================================================================
+TEST: Arbitrageur Initialization
+======================================================================
+___ TestArbitrageurBehavior.test_arbitrageur_detects_arbitrage_opportunities ___
+tests/test_agents_expanded.py:227: in test_arbitrageur_detects_arbitrage_opportunities
+    agent = Arbitrageur(
+E   TypeError: Arbitrageur.__init__() got an unexpected keyword argument 'unique_id'
+----------------------------- Captured stdout call -----------------------------
+
+======================================================================
+TEST: Arbitrage Opportunity Detection
+======================================================================
+___________ TestMarketMakerBehavior.test_market_maker_initialization ___________
+tests/test_agents_expanded.py:274: in test_market_maker_initialization
+    agent = MarketMaker(
+E   NameError: name 'MarketMaker' is not defined
+----------------------------- Captured stdout call -----------------------------
+
+======================================================================
+TEST: Market Maker Initialization
+======================================================================
+______ TestMarketMakerBehavior.test_market_maker_quotes_two_sided_market _______
+tests/test_agents_expanded.py:294: in test_market_maker_quotes_two_sided_market
+    agent = MarketMaker(
+E   NameError: name 'MarketMaker' is not defined
+----------------------------- Captured stdout call -----------------------------
+
+======================================================================
+TEST: Market Maker Two-Sided Quotes
+======================================================================
+________ TestMarketMakerBehavior.test_market_maker_inventory_management ________
+tests/test_agents_expanded.py:324: in test_market_maker_inventory_management
+    agent = MarketMaker(
+E   NameError: name 'MarketMaker' is not defined
+----------------------------- Captured stdout call -----------------------------
+
+======================================================================
+TEST: Market Maker Inventory Management
+======================================================================
+____________ TestHomerAgentBehavior.test_homer_agent_initialization ____________
+tests/test_agents_expanded.py:367: in test_homer_agent_initialization
+    agent = HomerAgent(
+E   NameError: name 'HomerAgent' is not defined
+----------------------------- Captured stdout call -----------------------------
+
+======================================================================
+TEST: Homer Agent Initialization
+======================================================================
+_____________ TestHomerAgentBehavior.test_homer_agent_loyalty_bias _____________
+tests/test_agents_expanded.py:387: in test_homer_agent_loyalty_bias
+    agent = HomerAgent(
+E   NameError: name 'HomerAgent' is not defined
+----------------------------- Captured stdout call -----------------------------
+
+======================================================================
+TEST: Homer Agent Loyalty Bias
+======================================================================
+___________ TestAgentInteractions.test_multiple_agent_types_coexist ____________
+tests/test_agents_expanded.py:431: in test_multiple_agent_types_coexist
+    NoiseTrader(1, None, 10000, 0.5),
+src/agents/noise_trader.py:15: in __init__
+    super().__init__(model, initial_wealth=initial_wealth, risk_limits=risk_limits)
+src/agents/base_agent.py:24: in __init__
+    super().__init__(model)
+/opt/anaconda3/lib/python3.13/site-packages/mesa/agent.py:68: in __init__
+    self.model.register_agent(self)
+E   AttributeError: 'int' object has no attribute 'register_agent'
+----------------------------- Captured stdout call -----------------------------
+
+======================================================================
+TEST: Multiple Agent Types
+======================================================================
+_____________ TestAgentInteractions.test_agent_wealth_distribution _____________
+tests/test_agents_expanded.py:455: in test_agent_wealth_distribution
+    NoiseTrader(i, None, 10000, 0.5)
+src/agents/noise_trader.py:15: in __init__
+    super().__init__(model, initial_wealth=initial_wealth, risk_limits=risk_limits)
+src/agents/base_agent.py:24: in __init__
+    super().__init__(model)
+/opt/anaconda3/lib/python3.13/site-packages/mesa/agent.py:68: in __init__
+    self.model.register_agent(self)
+E   AttributeError: 'int' object has no attribute 'register_agent'
+----------------------------- Captured stdout call -----------------------------
+
+======================================================================
+TEST: Agent Wealth Distribution
+======================================================================
+_________________ TestAgentEdgeCases.test_agent_with_zero_cash _________________
+tests/test_agents_expanded.py:493: in test_agent_with_zero_cash
+    agent = NoiseTrader(
+E   TypeError: NoiseTrader.__init__() got an unexpected keyword argument 'unique_id'
+----------------------------- Captured stdout call -----------------------------
+
+======================================================================
+TEST: Agent with Zero Cash
+======================================================================
+_____________ TestAgentEdgeCases.test_agent_with_negative_position _____________
+tests/test_agents_expanded.py:516: in test_agent_with_negative_position
+    agent = NoiseTrader(
+E   TypeError: NoiseTrader.__init__() got an unexpected keyword argument 'unique_id'
+----------------------------- Captured stdout call -----------------------------
+
+======================================================================
+TEST: Agent with Short Position
+======================================================================
+________________ TestAgentEdgeCases.test_extreme_risk_aversion _________________
+tests/test_agents_expanded.py:541: in test_extreme_risk_aversion
+    cautious_agent = NoiseTrader(
+E   TypeError: NoiseTrader.__init__() got an unexpected keyword argument 'unique_id'
+----------------------------- Captured stdout call -----------------------------
+
+======================================================================
+TEST: Extreme Risk Aversion
+======================================================================
+__________ TestOrderBookIntegration.test_order_book_basic_operations ___________
+tests/test_integration_full.py:30: in test_order_book_basic_operations
+    order_book = OrderBook(ticker="TEST_MARKET")
+E   TypeError: OrderBook.__init__() got an unexpected keyword argument 'ticker'
+----------------------------- Captured stdout call -----------------------------
+
+======================================================================
+TEST: Order Book Basic Operations
+======================================================================
+_________________ TestOrderBookIntegration.test_order_matching _________________
+tests/test_integration_full.py:80: in test_order_matching
+    order_book = OrderBook(ticker="TEST_MARKET")
+E   TypeError: OrderBook.__init__() got an unexpected keyword argument 'ticker'
+----------------------------- Captured stdout call -----------------------------
+
+======================================================================
+TEST: Order Matching
+======================================================================
+________ TestDataPipelineIntegration.test_feature_engineering_pipeline _________
+tests/test_integration_full.py:215: in test_feature_engineering_pipeline
+    elo_ratings = fe.calculate_elo_ratings(data)
+E   AttributeError: 'FeatureEngineer' object has no attribute 'calculate_elo_ratings'
+----------------------------- Captured stdout call -----------------------------
+
+======================================================================
+TEST: Feature Engineering Pipeline
+======================================================================
+✓ Sample data created: 3 games
+_____________ TestDataPipelineIntegration.test_data_quality_checks _____________
+tests/test_integration_full.py:247: in test_data_quality_checks
+    assert len(outliers) > 0, "Should detect outlier (1000)"
+E   AssertionError: Should detect outlier (1000)
+E   assert 0 > 0
+E    +  where 0 = len(array([], dtype=int64))
+----------------------------- Captured stdout call -----------------------------
+
+======================================================================
+TEST: Data Quality Checks
+======================================================================
+✓ Data: [ 100  102   98  105 1000   99  101]
+✓ Z-scores: [0.38040805 0.37452329 0.38629282 0.36569614 2.26773639 0.38335043
+ 0.37746567]
+✓ Outliers detected (z > 3): 0
+___________ TestEndToEndSimulation.test_multi_component_integration ____________
+tests/test_integration_full.py:393: in test_multi_component_integration
+    order_book = OrderBook(ticker="INTEGRATION_TEST")
+E   TypeError: OrderBook.__init__() got an unexpected keyword argument 'ticker'
+----------------------------- Captured stdout call -----------------------------
+
+======================================================================
+TEST: Multi-Component Integration
+======================================================================
+✓ Component 1: Order Book
+_____________________ TestDataQuality.test_data_validation _____________________
+tests/test_phase6_data_pipeline.py:263: in test_data_validation
+    assert len(outliers) > 0, "Should detect outlier (100)"
+E   AssertionError: Should detect outlier (100)
+E   assert 0 > 0
+E    +  where 0 = len(array([], dtype=int64))
+----------------------------- Captured stdout call -----------------------------
+
+======================================================================
+TEST: Data Quality Validation
+======================================================================
+✓ Outlier Detection:
+  Data: [  1   2   2   3   2   3 100   2   3]
+  Outlier indices: []
+_______________ TestRiskManager.test_risk_manager_initialization _______________
+tests/test_phase7_execution.py:27: in test_risk_manager_initialization
+    rm = RiskManager(
+E   TypeError: RiskManager.__init__() got an unexpected keyword argument 'max_position'
+----------------------------- Captured stdout call -----------------------------
+
+======================================================================
+TEST: Risk Manager Initialization
+======================================================================
+_______________ TestRiskManager.test_position_limit_enforcement ________________
+tests/test_phase7_execution.py:54: in test_position_limit_enforcement
+    rm = RiskManager(max_position=100)
+E   TypeError: RiskManager.__init__() got an unexpected keyword argument 'max_position'
+----------------------------- Captured stdout call -----------------------------
+
+======================================================================
+TEST: Position Limit Enforcement
+======================================================================
+___________________ TestRiskManager.test_drawdown_monitoring ___________________
+tests/test_phase7_execution.py:98: in test_drawdown_monitoring
+    rm = RiskManager(max_drawdown=0.15)
+E   TypeError: RiskManager.__init__() got an unexpected keyword argument 'max_drawdown'
+----------------------------- Captured stdout call -----------------------------
+
+======================================================================
+TEST: Drawdown Monitoring
+======================================================================
+_________ TestPhase2JumpDiffusion.test_simulate_price_paths_fat_tails __________
+tests/test_validation_suite.py:36: in test_simulate_price_paths_fat_tails
+    path = model.simulate_path(
+E   TypeError: JumpDiffusionModel.simulate_path() got an unexpected keyword argument 'initial_price'
+----------------------------- Captured stdout call -----------------------------
+
+======================================================================
+TEST: Jump-Diffusion Model - Fat Tail Distribution
+======================================================================
+________________ TestPhase2JumpDiffusion.test_calibration_runs _________________
+tests/test_validation_suite.py:71: in test_calibration_runs
+    prices = model.simulate_path(initial_price=0.5, n_steps=500, dt=1/252)
+E   TypeError: JumpDiffusionModel.simulate_path() got an unexpected keyword argument 'initial_price'
+----------------------------- Captured stdout call -----------------------------
+
+======================================================================
+TEST: Jump-Diffusion Model - Calibration
+======================================================================
+_________________ TestPhase2Sentiment.test_sentiment_analysis __________________
+tests/test_validation_suite.py:98: in test_sentiment_analysis
+    pos_score = model.analyze_sentiment(positive_text)
+E   AttributeError: 'SentimentModel' object has no attribute 'analyze_sentiment'. Did you mean: 'analyze_sentiment_vader'?
+----------------------------- Captured stdout call -----------------------------
+
+======================================================================
+TEST: Sentiment Analysis
+======================================================================
+__________________ TestPhase2Sentiment.test_panic_coefficient __________________
+tests/test_validation_suite.py:118: in test_panic_coefficient
+    panic_high = model.calculate_panic_coefficient(
+E   TypeError: SentimentModel.calculate_panic_coefficient() got an unexpected keyword argument 'csad'. Did you mean 'csad_t'?
+----------------------------- Captured stdout call -----------------------------
+
+======================================================================
+TEST: Panic Coefficient
+======================================================================
+_________ TestPhase3MarketModel.test_minimal_model_10_agents_100_steps _________
+tests/test_validation_suite.py:242: in test_minimal_model_10_agents_100_steps
+    model = PredictionMarketModel(
+E   TypeError: PredictionMarketModel.__init__() got an unexpected keyword argument 'n_noise_traders'
+----------------------------- Captured stdout call -----------------------------
+
+======================================================================
+TEST: Market Model - 10 Agents, 100 Steps
+======================================================================
+__________________ TestPhase3MarketModel.test_data_collection __________________
+tests/test_validation_suite.py:279: in test_data_collection
+    model = PredictionMarketModel(
+E   TypeError: PredictionMarketModel.__init__() got an unexpected keyword argument 'n_noise_traders'
+----------------------------- Captured stdout call -----------------------------
+
+======================================================================
+TEST: Data Collection
+======================================================================
+__________________ TestPhase3Agents.test_noise_traders_exist ___________________
+tests/test_validation_suite.py:310: in test_noise_traders_exist
+    model = PredictionMarketModel(
+E   TypeError: PredictionMarketModel.__init__() got an unexpected keyword argument 'n_noise_traders'
+----------------------------- Captured stdout call -----------------------------
+
+======================================================================
+TEST: Noise Traders
+======================================================================
+_________________ TestPhase3Agents.test_informed_traders_exist _________________
+tests/test_validation_suite.py:332: in test_informed_traders_exist
+    model = PredictionMarketModel(
+E   TypeError: PredictionMarketModel.__init__() got an unexpected keyword argument 'n_informed_traders'
+----------------------------- Captured stdout call -----------------------------
+
+======================================================================
+TEST: Informed Traders
+======================================================================
+___________________ TestPhase3Agents.test_arbitrageurs_exist ___________________
+tests/test_validation_suite.py:358: in test_arbitrageurs_exist
+    model = PredictionMarketModel(
+E   TypeError: PredictionMarketModel.__init__() got an unexpected keyword argument 'n_arbitrageurs'
+----------------------------- Captured stdout call -----------------------------
+
+======================================================================
+TEST: Arbitrageurs
+======================================================================
+__________________ TestPhase3Agents.test_market_makers_exist ___________________
+tests/test_validation_suite.py:385: in test_market_makers_exist
+    model = PredictionMarketModel(
+E   TypeError: PredictionMarketModel.__init__() got an unexpected keyword argument 'n_market_makers'
+----------------------------- Captured stdout call -----------------------------
+
+======================================================================
+TEST: Market Makers
+======================================================================
+___________________ TestPhase3Agents.test_homer_agents_exist ___________________
+tests/test_validation_suite.py:409: in test_homer_agents_exist
+    model = PredictionMarketModel(
+E   TypeError: PredictionMarketModel.__init__() got an unexpected keyword argument 'n_homer_agents'
+----------------------------- Captured stdout call -----------------------------
+
+======================================================================
+TEST: Homer (Loyalty Bias) Agents
+======================================================================
+=============================== warnings summary ===============================
+tests/test_backtesting_complete.py::TestPerformanceMetrics::test_sharpe_ratio_calculation
+  /opt/anaconda3/lib/python3.13/site-packages/quantstats/reports.py:34: DeprecationWarning: Importing display from IPython.core.display is deprecated since IPython 7.14, please import from IPython.display
+    from IPython.core.display import display as iDisplay, HTML as iHTML
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+================================ tests coverage ================================
+_______________ coverage: platform darwin, python 3.13.5-final-0 _______________
+
+Name                                     Stmts   Miss  Cover   Missing
+----------------------------------------------------------------------
+src/agents/arbitrageur.py                   34     14    59%   37-42, 48-60, 63-72
+src/agents/base_agent.py                    69      5    93%   43, 48, 85, 99-100
+src/agents/homer_agent.py                   28     11    61%   34-40, 46-54, 57-66
+src/agents/informed_trader.py               29      0   100%
+src/agents/llm_agent.py                     91     49    46%   12, 29, 37-46, 73-84, 111-121, 124-134, 138-174, 178-179, 182, 188-203
+src/agents/market_maker_agent.py            40      3    92%   74-76
+src/agents/noise_trader.py                  56      9    84%   31, 63, 65, 73-79
+src/backtesting/monte_carlo.py             109     35    68%   36-37, 75, 101, 133-147, 161, 246, 256, 269-296
+src/backtesting/performance_metrics.py     200     93    54%   19-21, 25, 40, 58, 64, 80, 98, 104, 120, 139, 157, 176, 194, 210, 217, 223, 250, 268, 293-324, 345-372, 392, 454-479, 504-553
+src/backtesting/walk_forward.py            170     57    66%   76, 100, 155, 172, 232-247, 286, 339, 353, 369-377, 390-404, 414-452
+src/data/feature_engineering.py             42     30    29%   19-44, 51-55, 61-68, 74-77
+src/execution/kalshi_client.py             104     87    16%   15-22, 28-40, 43, 53-62, 73-107, 113-115, 138-156, 177-193, 216-230, 249-275
+src/main.py                                106    106     0%   1-198
+src/models/behavioral_biases.py             33     22    33%   19-30, 37-46, 53-67, 73
+src/models/jump_diffusion.py               124    110    11%   24, 30-49, 55-78, 85-123, 130-148, 157-185, 193-198, 205-257
+src/models/market_model.py                 127     11    91%   218-247, 264
+src/models/microstructure.py                21      4    81%   24, 44-46
+src/models/sentiment_model.py               93     73    22%   28-52, 59-84, 90-92, 98, 113-117, 127-134, 150-202
+src/orderbook/matching_engine.py           108      5    95%   124, 134-137, 188
+src/orderbook/order.py                      43      4    91%   44, 46, 48, 53
+src/orderbook/orderbook.py                  62      6    90%   40, 46, 68, 78-79, 90
+src/risk/__init__.py                         2      0   100%
+src/risk/risk_manager.py                   138     70    49%   73-86, 109, 126, 135, 139, 147, 172-208, 235-253, 266-279, 283-287, 308-309, 313-315, 319-320, 324-333
+----------------------------------------------------------------------
+TOTAL                                     1829    804    56%
+Coverage HTML written to dir htmlcov
+FAIL Required test coverage of 70% not reached. Total coverage: 56.04%
+=========================== short test summary info ============================
+FAILED tests/test_agents.py::TestNoiseTrader::test_noise_trader_make_decision_random - AssertionError: Expected at least 1 order in 100 tries, got 0
+assert 0 > 0
+FAILED tests/test_agents_expanded.py::TestNoiseTraderBehavior::test_noise_trader_initialization - TypeError: NoiseTrader.__init__() got an unexpected keyword argument 'unique_id'
+FAILED tests/test_agents_expanded.py::TestNoiseTraderBehavior::test_noise_trader_random_decisions - TypeError: NoiseTrader.__init__() got an unexpected keyword argument 'unique_id'
+FAILED tests/test_agents_expanded.py::TestNoiseTraderBehavior::test_noise_trader_position_tracking - TypeError: NoiseTrader.__init__() got an unexpected keyword argument 'unique_id'
+FAILED tests/test_agents_expanded.py::TestInformedTraderBehavior::test_informed_trader_initialization - TypeError: InformedTrader.__init__() got an unexpected keyword argument 'unique_id'
+FAILED tests/test_agents_expanded.py::TestInformedTraderBehavior::test_informed_trader_uses_fundamental_value - TypeError: InformedTrader.__init__() got an unexpected keyword argument 'unique_id'
+FAILED tests/test_agents_expanded.py::TestArbitrageurBehavior::test_arbitrageur_initialization - TypeError: Arbitrageur.__init__() got an unexpected keyword argument 'unique_id'
+FAILED tests/test_agents_expanded.py::TestArbitrageurBehavior::test_arbitrageur_detects_arbitrage_opportunities - TypeError: Arbitrageur.__init__() got an unexpected keyword argument 'unique_id'
+FAILED tests/test_agents_expanded.py::TestMarketMakerBehavior::test_market_maker_initialization - NameError: name 'MarketMaker' is not defined
+FAILED tests/test_agents_expanded.py::TestMarketMakerBehavior::test_market_maker_quotes_two_sided_market - NameError: name 'MarketMaker' is not defined
+FAILED tests/test_agents_expanded.py::TestMarketMakerBehavior::test_market_maker_inventory_management - NameError: name 'MarketMaker' is not defined
+FAILED tests/test_agents_expanded.py::TestHomerAgentBehavior::test_homer_agent_initialization - NameError: name 'HomerAgent' is not defined
+FAILED tests/test_agents_expanded.py::TestHomerAgentBehavior::test_homer_agent_loyalty_bias - NameError: name 'HomerAgent' is not defined
+FAILED tests/test_agents_expanded.py::TestAgentInteractions::test_multiple_agent_types_coexist - AttributeError: 'int' object has no attribute 'register_agent'
+FAILED tests/test_agents_expanded.py::TestAgentInteractions::test_agent_wealth_distribution - AttributeError: 'int' object has no attribute 'register_agent'
+FAILED tests/test_agents_expanded.py::TestAgentEdgeCases::test_agent_with_zero_cash - TypeError: NoiseTrader.__init__() got an unexpected keyword argument 'unique_id'
+FAILED tests/test_agents_expanded.py::TestAgentEdgeCases::test_agent_with_negative_position - TypeError: NoiseTrader.__init__() got an unexpected keyword argument 'unique_id'
+FAILED tests/test_agents_expanded.py::TestAgentEdgeCases::test_extreme_risk_aversion - TypeError: NoiseTrader.__init__() got an unexpected keyword argument 'unique_id'
+FAILED tests/test_integration_full.py::TestOrderBookIntegration::test_order_book_basic_operations - TypeError: OrderBook.__init__() got an unexpected keyword argument 'ticker'
+FAILED tests/test_integration_full.py::TestOrderBookIntegration::test_order_matching - TypeError: OrderBook.__init__() got an unexpected keyword argument 'ticker'
+FAILED tests/test_integration_full.py::TestDataPipelineIntegration::test_feature_engineering_pipeline - AttributeError: 'FeatureEngineer' object has no attribute 'calculate_elo_ratings'
+FAILED tests/test_integration_full.py::TestDataPipelineIntegration::test_data_quality_checks - AssertionError: Should detect outlier (1000)
+assert 0 > 0
+ +  where 0 = len(array([], dtype=int64))
+FAILED tests/test_integration_full.py::TestEndToEndSimulation::test_multi_component_integration - TypeError: OrderBook.__init__() got an unexpected keyword argument 'ticker'
+FAILED tests/test_phase6_data_pipeline.py::TestDataQuality::test_data_validation - AssertionError: Should detect outlier (100)
+assert 0 > 0
+ +  where 0 = len(array([], dtype=int64))
+FAILED tests/test_phase7_execution.py::TestRiskManager::test_risk_manager_initialization - TypeError: RiskManager.__init__() got an unexpected keyword argument 'max_position'
+FAILED tests/test_phase7_execution.py::TestRiskManager::test_position_limit_enforcement - TypeError: RiskManager.__init__() got an unexpected keyword argument 'max_position'
+FAILED tests/test_phase7_execution.py::TestRiskManager::test_drawdown_monitoring - TypeError: RiskManager.__init__() got an unexpected keyword argument 'max_drawdown'
+FAILED tests/test_validation_suite.py::TestPhase2JumpDiffusion::test_simulate_price_paths_fat_tails - TypeError: JumpDiffusionModel.simulate_path() got an unexpected keyword argument 'initial_price'
+FAILED tests/test_validation_suite.py::TestPhase2JumpDiffusion::test_calibration_runs - TypeError: JumpDiffusionModel.simulate_path() got an unexpected keyword argument 'initial_price'
+FAILED tests/test_validation_suite.py::TestPhase2Sentiment::test_sentiment_analysis - AttributeError: 'SentimentModel' object has no attribute 'analyze_sentiment'. Did you mean: 'analyze_sentiment_vader'?
+FAILED tests/test_validation_suite.py::TestPhase2Sentiment::test_panic_coefficient - TypeError: SentimentModel.calculate_panic_coefficient() got an unexpected keyword argument 'csad'. Did you mean 'csad_t'?
+FAILED tests/test_validation_suite.py::TestPhase3MarketModel::test_minimal_model_10_agents_100_steps - TypeError: PredictionMarketModel.__init__() got an unexpected keyword argument 'n_noise_traders'
+FAILED tests/test_validation_suite.py::TestPhase3MarketModel::test_data_collection - TypeError: PredictionMarketModel.__init__() got an unexpected keyword argument 'n_noise_traders'
+FAILED tests/test_validation_suite.py::TestPhase3Agents::test_noise_traders_exist - TypeError: PredictionMarketModel.__init__() got an unexpected keyword argument 'n_noise_traders'
+FAILED tests/test_validation_suite.py::TestPhase3Agents::test_informed_traders_exist - TypeError: PredictionMarketModel.__init__() got an unexpected keyword argument 'n_informed_traders'
+FAILED tests/test_validation_suite.py::TestPhase3Agents::test_arbitrageurs_exist - TypeError: PredictionMarketModel.__init__() got an unexpected keyword argument 'n_arbitrageurs'
+FAILED tests/test_validation_suite.py::TestPhase3Agents::test_market_makers_exist - TypeError: PredictionMarketModel.__init__() got an unexpected keyword argument 'n_market_makers'
+FAILED tests/test_validation_suite.py::TestPhase3Agents::test_homer_agents_exist - TypeError: PredictionMarketModel.__init__() got an unexpected keyword argument 'n_homer_agents'
+============= 38 failed, 114 passed, 2 skipped, 1 warning in 3.33s =============
