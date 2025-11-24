@@ -1,12 +1,15 @@
-import mesa
+import logging
 from abc import abstractmethod
 from typing import List, Optional
-from src.orderbook.order import Order, OrderType
-from src.risk.risk_manager import RiskManager, RiskLimits
-import logging
+
+import mesa
 import numpy as np
 
+from src.orderbook.order import Order, OrderType
+from src.risk.risk_manager import RiskLimits, RiskManager
+
 logger = logging.getLogger(__name__)
+
 
 class BaseTrader(mesa.Agent):
     """
@@ -20,8 +23,11 @@ class BaseTrader(mesa.Agent):
     """
 
     def __init__(self, model: mesa.Model, initial_wealth: float = 1000.0, risk_limits: RiskLimits = None):
-        # Mesa 3.3+ requires model first, unique_id is auto-assigned
-        super().__init__(model)
+        # Mesa 2.x requires unique_id, Mesa 3.3+ auto-assigns it
+        # Generate unique_id based on the next agent ID
+        unique_id = model.next_id() if hasattr(model, 'next_id') else len(model.schedule.agents)
+        super().__init__(unique_id, model)
+
         self.initial_wealth = initial_wealth
         self.wealth = initial_wealth
         self.position = 0.0  # Net position in contracts
@@ -63,13 +69,7 @@ class BaseTrader(mesa.Agent):
             logger.debug(f"Agent {self.unique_id} trade blocked: {reason}")
         return allowed
 
-    def calculate_position_size(
-        self,
-        edge: float,
-        win_prob: float,
-        avg_win: float = 50.0,
-        avg_loss: float = 50.0
-    ) -> float:
+    def calculate_position_size(self, edge: float, win_prob: float, avg_win: float = 50.0, avg_loss: float = 50.0) -> float:
         """
         Calculate optimal position size using Kelly Criterion.
 
@@ -83,11 +83,7 @@ class BaseTrader(mesa.Agent):
             Position size in dollars
         """
         return self.risk_manager.calculate_position_size(
-            edge=edge,
-            win_prob=win_prob,
-            avg_win=avg_win,
-            avg_loss=avg_loss,
-            available_capital=self.wealth
+            edge=edge, win_prob=win_prob, avg_win=avg_win, avg_loss=avg_loss, available_capital=self.wealth
         )
 
     def submit_orders(self, orders: List[Order]):
@@ -95,14 +91,14 @@ class BaseTrader(mesa.Agent):
         for order in orders:
             # Basic validation against wealth/risk
             cost = order.price * order.quantity if order.price else self.wealth * 0.1
-            if order.side == 'BUY' and cost > self.wealth:
+            if order.side == "BUY" and cost > self.wealth:
                 logger.debug(f"Agent {self.unique_id} order rejected: insufficient funds")
-                continue # Insufficient funds
+                continue  # Insufficient funds
 
             # Risk management check
             # Estimate edge (simplified - agents should override this)
             edge = 0.05  # Default 5% edge assumption
-            ticker = getattr(self.model, 'current_ticker', 'MARKET')  # Use model's current market
+            ticker = getattr(self.model, "current_ticker", "MARKET")  # Use model's current market
             if not self.can_trade(ticker, edge):
                 continue
 
@@ -117,7 +113,7 @@ class BaseTrader(mesa.Agent):
                 side=order.side,
                 quantity=order.quantity,
                 price=order.price if order.price else 0.5,  # Default price for market orders
-                is_entry=True
+                is_entry=True,
             )
 
     def execute_trade(self, side: str, quantity: float, price: float):
@@ -134,7 +130,7 @@ class BaseTrader(mesa.Agent):
         """
         cost = quantity * price
 
-        if side == 'BUY':
+        if side == "BUY":
             # Check if enough wealth to buy
             if cost > self.wealth:
                 raise ValueError(f"Insufficient wealth: need {cost:.2f}, have {self.wealth:.2f}")
@@ -154,13 +150,15 @@ class BaseTrader(mesa.Agent):
             "side": side,
             "quantity": quantity,
             "price": price,
-            "step": getattr(self.model, 'step_count', 0),
-            "timestamp": getattr(self.model, 'step_count', 0)  # Mesa 3.3+ uses step_count directly
+            "step": getattr(self.model, "step_count", 0),
+            "timestamp": getattr(self.model, "step_count", 0),  # Mesa 3.3+ uses step_count directly
         }
         self.trade_history.append(trade_record)
 
-        logger.debug(f"Agent {self.unique_id} executed {side} {quantity:.2f} @ {price:.4f}, "
-                    f"wealth={self.wealth:.2f}, position={self.position:.2f}")
+        logger.debug(
+            f"Agent {self.unique_id} executed {side} {quantity:.2f} @ {price:.4f}, "
+            f"wealth={self.wealth:.2f}, position={self.position:.2f}"
+        )
 
     def get_portfolio_value(self, current_price: float) -> float:
         """Calculate total portfolio value."""

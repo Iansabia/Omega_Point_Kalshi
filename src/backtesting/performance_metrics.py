@@ -5,24 +5,28 @@ Implements standard trading metrics plus prediction market-specific measures.
 Includes QuantStats integration for comprehensive tearsheets.
 """
 
+import logging
+from typing import Any, Dict, List, Optional, Union
+
 import numpy as np
 import pandas as pd
-from typing import List, Dict, Optional, Union, Any
-import logging
 
 logger = logging.getLogger(__name__)
 
 # Try to import QuantStats (optional dependency)
 try:
     import quantstats as qs
+
     HAS_QUANTSTATS = True
 except ImportError:
     HAS_QUANTSTATS = False
     logger.warning("QuantStats not installed. Advanced metrics unavailable. Install with: pip install quantstats")
 
+
 def calculate_returns(prices: pd.Series) -> pd.Series:
     """Calculate simple returns from price series."""
     return prices.pct_change().fillna(0)
+
 
 def calculate_sharpe_ratio(returns: pd.Series, risk_free_rate: float = 0.0, periods_per_year: int = 252) -> float:
     """
@@ -41,6 +45,7 @@ def calculate_sharpe_ratio(returns: pd.Series, risk_free_rate: float = 0.0, peri
 
     excess_returns = returns - (risk_free_rate / periods_per_year)
     return np.sqrt(periods_per_year) * (excess_returns.mean() / excess_returns.std())
+
 
 def calculate_sortino_ratio(returns: pd.Series, risk_free_rate: float = 0.0, periods_per_year: int = 252) -> float:
     """
@@ -66,6 +71,7 @@ def calculate_sortino_ratio(returns: pd.Series, risk_free_rate: float = 0.0, per
     downside_std = downside_returns.std()
     return np.sqrt(periods_per_year) * (excess_returns.mean() / downside_std)
 
+
 def calculate_max_drawdown(equity_curve: pd.Series) -> float:
     """
     Calculate maximum drawdown from equity curve.
@@ -82,6 +88,7 @@ def calculate_max_drawdown(equity_curve: pd.Series) -> float:
     running_max = equity_curve.expanding().max()
     drawdown = (equity_curve - running_max) / running_max
     return abs(drawdown.min())
+
 
 def calculate_calmar_ratio(returns: pd.Series, periods_per_year: int = 252) -> float:
     """
@@ -106,6 +113,7 @@ def calculate_calmar_ratio(returns: pd.Series, periods_per_year: int = 252) -> f
     annual_return = (equity_curve.iloc[-1] ** (periods_per_year / len(returns))) - 1
     return annual_return / max_dd
 
+
 def calculate_win_rate(returns: pd.Series) -> float:
     """
     Calculate percentage of winning trades/periods.
@@ -121,6 +129,7 @@ def calculate_win_rate(returns: pd.Series) -> float:
 
     winning_periods = (returns > 0).sum()
     return winning_periods / len(returns)
+
 
 def calculate_profit_factor(returns: pd.Series) -> float:
     """
@@ -140,6 +149,7 @@ def calculate_profit_factor(returns: pd.Series) -> float:
 
     return profits / losses
 
+
 def calculate_brier_score(forecasts: np.ndarray, outcomes: np.ndarray) -> float:
     """
     Calculate Brier score for probability forecasts.
@@ -157,6 +167,7 @@ def calculate_brier_score(forecasts: np.ndarray, outcomes: np.ndarray) -> float:
         return 1.0
 
     return np.mean((forecasts - outcomes) ** 2)
+
 
 def calculate_log_loss(forecasts: np.ndarray, outcomes: np.ndarray, eps: float = 1e-15) -> float:
     """
@@ -180,6 +191,7 @@ def calculate_log_loss(forecasts: np.ndarray, outcomes: np.ndarray, eps: float =
 
     return -np.mean(outcomes * np.log(forecasts) + (1 - outcomes) * np.log(1 - forecasts))
 
+
 def calculate_avg_trade_return(trade_history: List[Dict]) -> float:
     """
     Calculate average return per trade.
@@ -193,8 +205,9 @@ def calculate_avg_trade_return(trade_history: List[Dict]) -> float:
     if not trade_history:
         return 0.0
 
-    returns = [trade.get('pnl', 0) for trade in trade_history]
+    returns = [trade.get("pnl", 0) for trade in trade_history]
     return np.mean(returns)
+
 
 def calculate_avg_win_loss_ratio(trade_history: List[Dict]) -> float:
     """
@@ -209,7 +222,7 @@ def calculate_avg_win_loss_ratio(trade_history: List[Dict]) -> float:
     if not trade_history:
         return 0.0
 
-    pnls = [trade.get('pnl', 0) for trade in trade_history]
+    pnls = [trade.get("pnl", 0) for trade in trade_history]
     wins = [p for p in pnls if p > 0]
     losses = [abs(p) for p in pnls if p < 0]
 
@@ -224,13 +237,14 @@ def calculate_avg_win_loss_ratio(trade_history: List[Dict]) -> float:
 
     return avg_win / avg_loss
 
+
 def generate_performance_report(
     returns: pd.Series,
     equity_curve: Optional[pd.Series] = None,
     trade_history: Optional[List[Dict]] = None,
     forecasts: Optional[np.ndarray] = None,
     outcomes: Optional[np.ndarray] = None,
-    periods_per_year: int = 252
+    periods_per_year: int = 252,
 ) -> Dict[str, float]:
     """
     Generate comprehensive performance report.
@@ -252,36 +266,41 @@ def generate_performance_report(
     metrics = {}
 
     # Basic statistics
-    metrics['total_return'] = equity_curve.iloc[-1] - 1 if equity_curve is not None and len(equity_curve) > 0 else 0.0
-    metrics['annual_return'] = (equity_curve.iloc[-1] ** (periods_per_year / len(returns))) - 1 if equity_curve is not None and len(equity_curve) > 0 else 0.0
-    metrics['volatility'] = returns.std() * np.sqrt(periods_per_year) if len(returns) > 0 else 0.0
+    metrics["total_return"] = equity_curve.iloc[-1] - 1 if equity_curve is not None and len(equity_curve) > 0 else 0.0
+    metrics["annual_return"] = (
+        (equity_curve.iloc[-1] ** (periods_per_year / len(returns))) - 1
+        if equity_curve is not None and len(equity_curve) > 0
+        else 0.0
+    )
+    metrics["volatility"] = returns.std() * np.sqrt(periods_per_year) if len(returns) > 0 else 0.0
 
     # Risk-adjusted returns
-    metrics['sharpe_ratio'] = calculate_sharpe_ratio(returns, periods_per_year=periods_per_year)
-    metrics['sortino_ratio'] = calculate_sortino_ratio(returns, periods_per_year=periods_per_year)
-    metrics['calmar_ratio'] = calculate_calmar_ratio(returns, periods_per_year=periods_per_year)
+    metrics["sharpe_ratio"] = calculate_sharpe_ratio(returns, periods_per_year=periods_per_year)
+    metrics["sortino_ratio"] = calculate_sortino_ratio(returns, periods_per_year=periods_per_year)
+    metrics["calmar_ratio"] = calculate_calmar_ratio(returns, periods_per_year=periods_per_year)
 
     # Drawdown metrics
     if equity_curve is not None and len(equity_curve) > 0:
-        metrics['max_drawdown'] = calculate_max_drawdown(equity_curve)
+        metrics["max_drawdown"] = calculate_max_drawdown(equity_curve)
     else:
-        metrics['max_drawdown'] = 0.0
+        metrics["max_drawdown"] = 0.0
 
     # Trade statistics
-    metrics['win_rate'] = calculate_win_rate(returns)
-    metrics['profit_factor'] = calculate_profit_factor(returns)
+    metrics["win_rate"] = calculate_win_rate(returns)
+    metrics["profit_factor"] = calculate_profit_factor(returns)
 
     if trade_history:
-        metrics['num_trades'] = len(trade_history)
-        metrics['avg_trade_return'] = calculate_avg_trade_return(trade_history)
-        metrics['avg_win_loss_ratio'] = calculate_avg_win_loss_ratio(trade_history)
+        metrics["num_trades"] = len(trade_history)
+        metrics["avg_trade_return"] = calculate_avg_trade_return(trade_history)
+        metrics["avg_win_loss_ratio"] = calculate_avg_win_loss_ratio(trade_history)
 
     # Prediction market metrics
     if forecasts is not None and outcomes is not None:
-        metrics['brier_score'] = calculate_brier_score(forecasts, outcomes)
-        metrics['log_loss'] = calculate_log_loss(forecasts, outcomes)
+        metrics["brier_score"] = calculate_brier_score(forecasts, outcomes)
+        metrics["log_loss"] = calculate_log_loss(forecasts, outcomes)
 
     return metrics
+
 
 def print_performance_report(metrics: Dict[str, float]):
     """
@@ -311,12 +330,12 @@ def print_performance_report(metrics: Dict[str, float]):
     logger.info(f"  Win Rate: {metrics.get('win_rate', 0):.2%}")
     logger.info(f"  Profit Factor: {metrics.get('profit_factor', 0):.2f}")
 
-    if 'num_trades' in metrics:
+    if "num_trades" in metrics:
         logger.info(f"  Number of Trades: {metrics['num_trades']}")
         logger.info(f"  Avg Trade Return: {metrics.get('avg_trade_return', 0):.4f}")
         logger.info(f"  Avg Win/Loss Ratio: {metrics.get('avg_win_loss_ratio', 0):.2f}")
 
-    if 'brier_score' in metrics:
+    if "brier_score" in metrics:
         logger.info("\nPrediction Market Metrics:")
         logger.info(f"  Brier Score: {metrics['brier_score']:.4f}")
         logger.info(f"  Log Loss: {metrics['log_loss']:.4f}")
@@ -328,7 +347,7 @@ def generate_quantstats_report(
     returns: Union[pd.Series, pd.DataFrame],
     benchmark: Optional[pd.Series] = None,
     output_file: Optional[str] = None,
-    title: str = "Strategy Performance"
+    title: str = "Strategy Performance",
 ) -> Optional[Dict]:
     """
     Generate comprehensive QuantStats tearsheet.
@@ -354,28 +373,17 @@ def generate_quantstats_report(
 
     # Generate HTML report
     if output_file:
-        qs.reports.html(
-            returns,
-            benchmark=benchmark,
-            output=output_file,
-            title=title
-        )
+        qs.reports.html(returns, benchmark=benchmark, output=output_file, title=title)
         logger.info(f"QuantStats report saved to: {output_file}")
 
     # Generate metrics
-    metrics = qs.reports.metrics(
-        returns,
-        mode='full',
-        display=False
-    )
+    metrics = qs.reports.metrics(returns, mode="full", display=False)
 
     return metrics
 
 
 def calculate_prediction_market_accuracy(
-    forecasts: np.ndarray,
-    outcomes: np.ndarray,
-    probability_bins: int = 10
+    forecasts: np.ndarray, outcomes: np.ndarray, probability_bins: int = 10
 ) -> Dict[str, float]:
     """
     Calculate prediction market calibration metrics.
@@ -402,23 +410,22 @@ def calculate_prediction_market_accuracy(
             avg_forecast = forecasts[mask].mean()
             avg_outcome = outcomes[mask].mean()
             count = mask.sum()
-            calibration_data.append({
-                'bin': i,
-                'avg_forecast': avg_forecast,
-                'avg_outcome': avg_outcome,
-                'count': count,
-                'calibration_error': abs(avg_forecast - avg_outcome)
-            })
+            calibration_data.append(
+                {
+                    "bin": i,
+                    "avg_forecast": avg_forecast,
+                    "avg_outcome": avg_outcome,
+                    "count": count,
+                    "calibration_error": abs(avg_forecast - avg_outcome),
+                }
+            )
 
     # Expected Calibration Error (ECE)
     total_samples = len(forecasts)
-    ece = sum(
-        (d['count'] / total_samples) * d['calibration_error']
-        for d in calibration_data
-    )
+    ece = sum((d["count"] / total_samples) * d["calibration_error"] for d in calibration_data)
 
     # Maximum Calibration Error (MCE)
-    mce = max(d['calibration_error'] for d in calibration_data) if calibration_data else 0.0
+    mce = max(d["calibration_error"] for d in calibration_data) if calibration_data else 0.0
 
     # Brier score decomposition
     brier = calculate_brier_score(forecasts, outcomes)
@@ -427,20 +434,17 @@ def calculate_prediction_market_accuracy(
     uncertainty = outcomes.mean() * (1 - outcomes.mean())
 
     return {
-        'brier_score': brier,
-        'expected_calibration_error': ece,
-        'max_calibration_error': mce,
-        'reliability': reliability,
-        'resolution': resolution,
-        'uncertainty': uncertainty,
-        'calibration_curve': calibration_data
+        "brier_score": brier,
+        "expected_calibration_error": ece,
+        "max_calibration_error": mce,
+        "reliability": reliability,
+        "resolution": resolution,
+        "uncertainty": uncertainty,
+        "calibration_curve": calibration_data,
     }
 
 
-def calculate_market_efficiency_metrics(
-    market_prices: pd.Series,
-    fundamental_values: pd.Series
-) -> Dict[str, float]:
+def calculate_market_efficiency_metrics(market_prices: pd.Series, fundamental_values: pd.Series) -> Dict[str, float]:
     """
     Calculate market efficiency metrics for prediction markets.
 
@@ -462,7 +466,7 @@ def calculate_market_efficiency_metrics(
     mae = abs_deviations.mean()
 
     # Root Mean Squared Error
-    rmse = np.sqrt((deviations ** 2).mean())
+    rmse = np.sqrt((deviations**2).mean())
 
     # Correlation
     correlation = market_prices.corr(fundamental_values)
@@ -477,19 +481,18 @@ def calculate_market_efficiency_metrics(
     convergence_rate = converged.sum() / len(converged)
 
     return {
-        'mean_absolute_error': mae,
-        'rmse': rmse,
-        'correlation': correlation,
-        'information_ratio': information_ratio,
-        'convergence_rate': convergence_rate,
-        'avg_deviation': deviations.mean(),
-        'tracking_error': tracking_error
+        "mean_absolute_error": mae,
+        "rmse": rmse,
+        "correlation": correlation,
+        "information_ratio": information_ratio,
+        "convergence_rate": convergence_rate,
+        "avg_deviation": deviations.mean(),
+        "tracking_error": tracking_error,
     }
 
 
 def calculate_stress_test_metrics(
-    returns: pd.Series,
-    stress_scenarios: Optional[Dict[str, pd.Series]] = None
+    returns: pd.Series, stress_scenarios: Optional[Dict[str, pd.Series]] = None
 ) -> Dict[str, Any]:
     """
     Calculate performance under stress scenarios.
@@ -521,14 +524,14 @@ def calculate_stress_test_metrics(
     tail_ratio = np.percentile(returns, 95) / abs(np.percentile(returns, 5)) if np.percentile(returns, 5) != 0 else 0
 
     metrics = {
-        'worst_day': worst_day,
-        'worst_week': worst_week,
-        'worst_month': worst_month,
-        'var_95': var_95,
-        'var_99': var_99,
-        'cvar_95': cvar_95,
-        'cvar_99': cvar_99,
-        'tail_ratio': tail_ratio
+        "worst_day": worst_day,
+        "worst_week": worst_week,
+        "worst_month": worst_month,
+        "var_95": var_95,
+        "var_99": var_99,
+        "cvar_95": cvar_95,
+        "cvar_99": cvar_99,
+        "tail_ratio": tail_ratio,
     }
 
     # If stress scenarios provided, calculate beta
@@ -547,7 +550,7 @@ def calculate_stress_test_metrics(
                 # Calculate scenario performance
                 scenario_performance = aligned_returns.mean()
 
-                metrics[f'beta_{scenario_name}'] = beta
-                metrics[f'performance_{scenario_name}'] = scenario_performance
+                metrics[f"beta_{scenario_name}"] = beta
+                metrics[f"performance_{scenario_name}"] = scenario_performance
 
     return metrics

@@ -1,6 +1,7 @@
 import numpy as np
 from numba import jit
 
+
 @jit(nopython=True, fastmath=True)
 def calculate_fills_optimized(incoming_qty: float, resting_qtys: np.array) -> np.array:
     """
@@ -9,16 +10,17 @@ def calculate_fills_optimized(incoming_qty: float, resting_qtys: np.array) -> np
     """
     fills = np.zeros_like(resting_qtys)
     remaining = incoming_qty
-    
+
     for i in range(len(resting_qtys)):
         if remaining <= 0:
             break
-            
+
         fill = min(remaining, resting_qtys[i])
         fills[i] = fill
         remaining -= fill
-        
+
     return fills
+
 
 @jit(nopython=True, fastmath=True)
 def calculate_vwap(prices: np.array, quantities: np.array) -> float:

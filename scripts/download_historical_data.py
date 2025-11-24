@@ -16,6 +16,7 @@ Usage:
     # Clear cache and re-download
     python scripts/download_historical_data.py --season 2024 --clear-cache
 """
+
 import argparse
 import sys
 from pathlib import Path
@@ -28,16 +29,17 @@ from src.data.kalshi_historical import KalshiHistoricalDataFetcher
 
 def main():
     """Download historical data from Kalshi."""
-    parser = argparse.ArgumentParser(description='Download historical Kalshi NFL data')
-    parser.add_argument('--season', type=int, help='NFL season year (e.g., 2024)')
-    parser.add_argument('--all', action='store_true', help='Download all seasons')
-    parser.add_argument('--max-markets', type=int, help='Limit number of markets (for testing)')
-    parser.add_argument('--clear-cache', action='store_true', help='Clear cache before downloading')
-    parser.add_argument('--interval', type=int, default=60, choices=[1, 60, 1440],
-                        help='Candlestick interval in minutes (1, 60, or 1440)')
-    parser.add_argument('--status', type=str, default='settled',
-                        choices=['settled', 'closed', 'open'],
-                        help='Market status to fetch')
+    parser = argparse.ArgumentParser(description="Download historical Kalshi NFL data")
+    parser.add_argument("--season", type=int, help="NFL season year (e.g., 2024)")
+    parser.add_argument("--all", action="store_true", help="Download all seasons")
+    parser.add_argument("--max-markets", type=int, help="Limit number of markets (for testing)")
+    parser.add_argument("--clear-cache", action="store_true", help="Clear cache before downloading")
+    parser.add_argument(
+        "--interval", type=int, default=60, choices=[1, 60, 1440], help="Candlestick interval in minutes (1, 60, or 1440)"
+    )
+    parser.add_argument(
+        "--status", type=str, default="settled", choices=["settled", "closed", "open"], help="Market status to fetch"
+    )
     args = parser.parse_args()
 
     print("=" * 80)
@@ -70,9 +72,7 @@ def main():
 
         # Fetch markets
         markets = fetcher.fetch_nfl_markets(
-            season=season,
-            status=args.status,
-            use_cache=not args.clear_cache
+            season=season, status=args.status, use_cache=not args.clear_cache, max_markets=args.max_markets
         )
 
         if markets.empty:
@@ -82,17 +82,14 @@ def main():
         print(f"\n📊 Market Summary:")
         print(f"   Total markets: {len(markets)}")
 
-        if 'status' in markets.columns:
+        if "status" in markets.columns:
             print(f"   By status:")
-            for status, count in markets['status'].value_counts().items():
+            for status, count in markets["status"].value_counts().items():
                 print(f"      {status}: {count}")
 
         # Download candlesticks
         candlesticks = fetcher.download_candlesticks(
-            markets,
-            period_interval=args.interval,
-            use_cache=not args.clear_cache,
-            max_markets=args.max_markets
+            markets, period_interval=args.interval, use_cache=not args.clear_cache, max_markets=args.max_markets
         )
 
         total_markets += len(markets)

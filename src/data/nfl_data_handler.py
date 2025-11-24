@@ -1,16 +1,18 @@
-import pandas as pd
-from typing import Dict, Any, Optional, List
 import logging
+from typing import Any, Dict, List, Optional
+
+import pandas as pd
 
 logger = logging.getLogger(__name__)
+
 
 class NFLDataHandler:
     """
     Handler for fetching and processing NFL data from nflverse.
     """
-    
+
     BASE_URL = "https://github.com/nflverse/nflverse-data/releases/download"
-    
+
     def __init__(self, cache_dir: str = ".cache"):
         self.cache_dir = cache_dir
         # Ensure cache dir exists if we were to use local caching
@@ -29,17 +31,17 @@ class NFLDataHandler:
                 dfs.append(df)
             except Exception as e:
                 logger.error(f"Failed to load PBP data for {season}: {e}")
-        
+
         if not dfs:
             return pd.DataFrame()
-            
+
         return pd.concat(dfs, ignore_index=True)
 
     def load_player_stats(self, seasons: List[int]) -> pd.DataFrame:
         """
         Load player stats.
         """
-        # nflverse stores player stats in a slightly different structure, 
+        # nflverse stores player stats in a slightly different structure,
         # often aggregated. For now, let's pull weekly stats.
         dfs = []
         for season in seasons:
@@ -50,10 +52,10 @@ class NFLDataHandler:
                 dfs.append(df)
             except Exception as e:
                 logger.error(f"Failed to load player stats for {season}: {e}")
-                
+
         if not dfs:
             return pd.DataFrame()
-            
+
         return pd.concat(dfs, ignore_index=True)
 
     def get_team_stats(self, season: int) -> pd.DataFrame:

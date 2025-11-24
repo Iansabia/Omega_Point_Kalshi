@@ -1,10 +1,11 @@
-import os
 import json
+import os
 import time
-from typing import Dict, Any
+import uuid
+from typing import Any, Dict
+
 from src.agents.base_agent import BaseTrader
 from src.orderbook.order import Order, OrderType
-import uuid
 
 # Placeholder for google.genai
 try:
@@ -13,11 +14,12 @@ try:
 except ImportError:
     genai = None
 
+
 class LLMAgent(BaseTrader):
     """
     Trader agent driven by an LLM (Gemini Flash 2.0).
     """
-    
+
     def __init__(self, model, initial_wealth: float = 10000.0, risk_profile: str = "balanced"):
         super().__init__(model, initial_wealth=initial_wealth)
         self.risk_profile = risk_profile
@@ -36,7 +38,7 @@ class LLMAgent(BaseTrader):
         """
         if not self.client:
             return
-            
+
         agent_profile = f"You are a {self.risk_profile} trader. Your goal is to maximize profit while managing risk."
         try:
             # Mocking the cache creation as it requires specific API version/setup
@@ -54,16 +56,16 @@ class LLMAgent(BaseTrader):
 
         # Calculate volatility if we have price history
         volatility = 0.0
-        if hasattr(self.model, 'order_book'):
+        if hasattr(self.model, "order_book"):
             spread = self.model.order_book.get_spread()
             volatility = spread / current_price if current_price > 0 and spread else 0.0
 
         return {
-            'price': current_price,
-            'volatility': volatility,
-            'position': self.position,
-            'wealth': self.wealth,
-            'risk_profile': self.risk_profile
+            "price": current_price,
+            "volatility": volatility,
+            "position": self.position,
+            "wealth": self.wealth,
+            "risk_profile": self.risk_profile,
         }
 
     def make_decision(self):
@@ -73,11 +75,11 @@ class LLMAgent(BaseTrader):
         market_state = {
             "price": self.model.current_price,
             "spread": self.model.get_spread(),
-            "volatility": 0.05, # Mock
+            "volatility": 0.05,  # Mock
             "wealth": self.wealth,
-            "position": self.position
+            "position": self.position,
         }
-        
+
         if self.should_use_llm(market_state):
             self._llm_decision(market_state)
         else:
@@ -88,7 +90,7 @@ class LLMAgent(BaseTrader):
         Determine if LLM call is worth the cost/latency.
         """
         # Use rules for simple cases
-        if market_state.get('volatility', 0) < 0.1:
+        if market_state.get("volatility", 0) < 0.1:
             return False
         # Use LLM for complex scenarios
         return True
@@ -102,8 +104,8 @@ class LLMAgent(BaseTrader):
 
     def _rule_based_decision(self, market_state: Dict):
         """Fallback rule-based logic: Simple Trend Following."""
-        price = market_state['price']
-        
+        price = market_state["price"]
+
         # Simple logic: if price is low (vs 0.5), buy. If high, sell.
         # This is a mean-reversion strategy for the fallback.
         if price < 0.4 and self.wealth > price:
@@ -111,12 +113,12 @@ class LLMAgent(BaseTrader):
             qty = 1
             order = Order(
                 order_id=str(uuid.uuid4()),
-                side='BUY',
-                price=price, # Limit at current
+                side="BUY",
+                price=price,  # Limit at current
                 quantity=qty,
                 timestamp=time.time(),
                 trader_id=self.trader_id,
-                order_type=OrderType.LIMIT
+                order_type=OrderType.LIMIT,
             )
             self.submit_orders([order])
         elif price > 0.6 and self.position > 0:
@@ -124,12 +126,12 @@ class LLMAgent(BaseTrader):
             qty = 1
             order = Order(
                 order_id=str(uuid.uuid4()),
-                side='SELL',
+                side="SELL",
                 price=price,
                 quantity=qty,
                 timestamp=time.time(),
                 trader_id=self.trader_id,
-                order_type=OrderType.LIMIT
+                order_type=OrderType.LIMIT,
             )
             self.submit_orders([order])
 
@@ -137,38 +139,36 @@ class LLMAgent(BaseTrader):
         """Call Gemini API with retry logic and error handling."""
         if not self.client:
             return
-            
+
         prompt = self._construct_prompt(market_state)
         max_retries = 3
         backoff = 1.0
-        
+
         for attempt in range(max_retries):
             try:
                 start_time = time.time()
                 response = self.client.models.generate_content(
                     model="gemini-2.0-flash",
                     contents=prompt,
-                    config=types.GenerateContentConfig(
-                        response_mime_type="application/json"
-                    )
+                    config=types.GenerateContentConfig(response_mime_type="application/json"),
                 )
                 duration = time.time() - start_time
-                
+
                 # Parse response
                 decision = json.loads(response.text)
-                
+
                 # Validate output format
                 if not self._validate_decision_format(decision):
                     raise ValueError("Malformed LLM response format")
-                    
+
                 self._execute_llm_action(decision)
-                return # Success
-                
+                return  # Success
+
             except Exception as e:
                 print(f"LLM Error (Attempt {attempt+1}/{max_retries}): {e}")
                 if attempt < max_retries - 1:
                     time.sleep(backoff)
-                    backoff *= 2 # Exponential backoff
+                    backoff *= 2  # Exponential backoff
                 else:
                     # Fallback after all retries fail
                     self._rule_based_decision(market_state)
@@ -187,9 +187,9 @@ class LLMAgent(BaseTrader):
     def _execute_llm_action(self, decision: Dict):
         action = decision.get("action")
         quantity = decision.get("quantity", 0)
-        
+
         if action in ["BUY", "SELL"] and quantity > 0:
-            price = self.model.current_price # Market order or limit?
+            price = self.model.current_price  # Market order or limit?
             # Let's assume market order for simplicity or limit at current price
             order = Order(
                 order_id=str(uuid.uuid4()),
@@ -198,6 +198,6 @@ class LLMAgent(BaseTrader):
                 quantity=quantity,
                 timestamp=time.time(),
                 trader_id=self.trader_id,
-                order_type=OrderType.MARKET
+                order_type=OrderType.MARKET,
             )
             self.submit_orders([order])

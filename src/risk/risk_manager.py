@@ -9,10 +9,11 @@ Implements comprehensive risk controls to maximize risk-adjusted returns:
 - Circuit breakers
 """
 
-import numpy as np
-from typing import Dict, List, Optional, Tuple
-from dataclasses import dataclass
 from collections import defaultdict
+from dataclasses import dataclass
+from typing import Dict, List, Optional, Tuple
+
+import numpy as np
 
 
 @dataclass
@@ -149,12 +150,7 @@ class RiskManager:
         return True, "OK"
 
     def calculate_position_size(
-        self,
-        edge: float,
-        win_prob: float,
-        avg_win: float,
-        avg_loss: float,
-        available_capital: float
+        self, edge: float, win_prob: float, avg_win: float, avg_loss: float, available_capital: float
     ) -> float:
         """
         Calculate optimal position size using Kelly Criterion.
@@ -207,14 +203,7 @@ class RiskManager:
 
         return position_size
 
-    def record_trade(
-        self,
-        ticker: str,
-        side: str,
-        quantity: float,
-        price: float,
-        is_entry: bool = True
-    ):
+    def record_trade(self, ticker: str, side: str, quantity: float, price: float, is_entry: bool = True):
         """
         Record a trade.
 
@@ -234,7 +223,7 @@ class RiskManager:
             # Closing position - check if loss
             if ticker in self.position_entry_prices:
                 entry_price = self.position_entry_prices[ticker]
-                pnl = (price - entry_price) * quantity if side == 'buy' else (entry_price - price) * quantity
+                pnl = (price - entry_price) * quantity if side == "buy" else (entry_price - price) * quantity
 
                 if pnl < 0:
                     self.consecutive_losses += 1
@@ -282,17 +271,21 @@ class RiskManager:
         """Get current risk metrics."""
         total_exposure = sum(abs(p) for p in self.positions.values())
         total_dd = (self.peak_capital - self.current_capital) / self.peak_capital if self.peak_capital > 0 else 0
-        daily_dd = (self.game_start_capital - self.current_capital) / self.game_start_capital if self.game_start_capital > 0 else 0
+        daily_dd = (
+            (self.game_start_capital - self.current_capital) / self.game_start_capital if self.game_start_capital > 0 else 0
+        )
 
         return {
-            'total_exposure': total_exposure,
-            'num_positions': len(self.positions),
-            'trades_this_game': self.trades_this_game,
-            'total_drawdown': total_dd,
-            'daily_drawdown': daily_dd,
-            'consecutive_losses': self.consecutive_losses,
-            'circuit_breaker_active': self.circuit_breaker_active,
-            'exposure_utilization': total_exposure / self.limits.max_portfolio_exposure if self.limits.max_portfolio_exposure > 0 else 0
+            "total_exposure": total_exposure,
+            "num_positions": len(self.positions),
+            "trades_this_game": self.trades_this_game,
+            "total_drawdown": total_dd,
+            "daily_drawdown": daily_dd,
+            "consecutive_losses": self.consecutive_losses,
+            "circuit_breaker_active": self.circuit_breaker_active,
+            "exposure_utilization": (
+                total_exposure / self.limits.max_portfolio_exposure if self.limits.max_portfolio_exposure > 0 else 0
+            ),
         }
 
 
@@ -323,18 +316,15 @@ class PortfolioRiskManager:
         """Get portfolio-wide risk metrics."""
         total_positions = sum(len(m.positions) for m in self.agent_managers.values())
         total_trades = sum(m.trades_this_game for m in self.agent_managers.values())
-        total_exposure = sum(
-            sum(abs(p) for p in m.positions.values())
-            for m in self.agent_managers.values()
-        )
+        total_exposure = sum(sum(abs(p) for p in m.positions.values()) for m in self.agent_managers.values())
 
         active_breakers = sum(1 for m in self.agent_managers.values() if m.circuit_breaker_active)
 
         return {
-            'total_positions': total_positions,
-            'total_trades': total_trades,
-            'total_exposure': total_exposure,
-            'active_circuit_breakers': active_breakers,
-            'num_agents': len(self.agent_managers),
-            'avg_trades_per_agent': total_trades / len(self.agent_managers) if self.agent_managers else 0
+            "total_positions": total_positions,
+            "total_trades": total_trades,
+            "total_exposure": total_exposure,
+            "active_circuit_breakers": active_breakers,
+            "num_agents": len(self.agent_managers),
+            "avg_trades_per_agent": total_trades / len(self.agent_managers) if self.agent_managers else 0,
         }

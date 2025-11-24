@@ -4,13 +4,14 @@ Walk-forward optimization for backtesting.
 Implements time-series cross-validation with rolling windows to prevent overfitting.
 """
 
+import logging
+from concurrent.futures import ProcessPoolExecutor, as_completed
+from dataclasses import dataclass
+from typing import Any, Callable, Dict, List, Optional, Tuple
+
 import numpy as np
 import pandas as pd
-from typing import Dict, List, Tuple, Callable, Any, Optional
-from dataclasses import dataclass
-import logging
-from scipy.optimize import minimize, differential_evolution
-from concurrent.futures import ProcessPoolExecutor, as_completed
+from scipy.optimize import differential_evolution, minimize
 
 logger = logging.getLogger(__name__)
 
@@ -20,6 +21,7 @@ class WalkForwardWindow:
     """
     Represents a single walk-forward optimization window.
     """
+
     train_start: int
     train_end: int
     test_start: int
@@ -42,7 +44,7 @@ class WalkForwardOptimizer:
         anchored: bool = False,
         gap: int = 0,
         parallel: bool = False,
-        n_jobs: int = 4
+        n_jobs: int = 4,
     ):
         """
         Initialize walk-forward optimizer.
@@ -100,11 +102,7 @@ class WalkForwardOptimizer:
                 break
 
             window = WalkForwardWindow(
-                train_start=train_start,
-                train_end=train_end,
-                test_start=test_start,
-                test_end=test_end,
-                fold_number=fold
+                train_start=train_start, train_end=train_end, test_start=test_start, test_end=test_end, fold_number=fold
             )
 
             windows.append(window)
@@ -118,8 +116,8 @@ class WalkForwardOptimizer:
         objective_function: Callable,
         param_bounds: Dict[str, Tuple[float, float]],
         data: pd.DataFrame,
-        method: str = 'differential_evolution',
-        **kwargs
+        method: str = "differential_evolution",
+        **kwargs,
     ) -> Dict[str, Any]:
         """
         Optimize parameters for a single fold.
@@ -138,8 +136,8 @@ class WalkForwardOptimizer:
         logger.info(f"Optimizing fold {window.fold_number}...")
 
         # Extract training data
-        train_data = data.iloc[window.train_start:window.train_end]
-        test_data = data.iloc[window.test_start:window.test_end]
+        train_data = data.iloc[window.train_start : window.train_end]
+        test_data = data.iloc[window.test_start : window.test_end]
 
         # Prepare bounds for optimizer
         param_names = list(param_bounds.keys())
@@ -151,23 +149,12 @@ class WalkForwardOptimizer:
             return objective_function(train_data, param_dict)
 
         # Run optimization
-        if method == 'differential_evolution':
-            result = differential_evolution(
-                objective_wrapper,
-                bounds,
-                seed=window.fold_number,
-                workers=1,
-                **kwargs
-            )
-        elif method == 'scipy':
+        if method == "differential_evolution":
+            result = differential_evolution(objective_wrapper, bounds, seed=window.fold_number, workers=1, **kwargs)
+        elif method == "scipy":
             # Start from middle of bounds
             x0 = [(b[0] + b[1]) / 2 for b in bounds]
-            result = minimize(
-                objective_wrapper,
-                x0,
-                bounds=bounds,
-                **kwargs
-            )
+            result = minimize(objective_wrapper, x0, bounds=bounds, **kwargs)
         else:
             raise ValueError(f"Unknown optimization method: {method}")
 
@@ -180,14 +167,14 @@ class WalkForwardOptimizer:
         logger.info(f"Fold {window.fold_number}: Train score={result.fun:.4f}, Test score={test_score:.4f}")
 
         return {
-            'fold': window.fold_number,
-            'window': window,
-            'optimal_params': optimal_params,
-            'train_score': result.fun,
-            'test_score': test_score,
-            'optimization_result': result,
-            'train_data': train_data,
-            'test_data': test_data
+            "fold": window.fold_number,
+            "window": window,
+            "optimal_params": optimal_params,
+            "train_score": result.fun,
+            "test_score": test_score,
+            "optimization_result": result,
+            "train_data": train_data,
+            "test_data": test_data,
         }
 
     def run_walk_forward(
@@ -195,8 +182,8 @@ class WalkForwardOptimizer:
         data: pd.DataFrame,
         objective_function: Callable,
         param_bounds: Dict[str, Tuple[float, float]],
-        method: str = 'differential_evolution',
-        **kwargs
+        method: str = "differential_evolution",
+        **kwargs,
     ) -> Dict[str, Any]:
         """
         Run complete walk-forward optimization.
@@ -232,13 +219,7 @@ class WalkForwardOptimizer:
             with ProcessPoolExecutor(max_workers=self.n_jobs) as executor:
                 futures = {
                     executor.submit(
-                        self.optimize_fold,
-                        window,
-                        objective_function,
-                        param_bounds,
-                        data,
-                        method,
-                        **kwargs
+                        self.optimize_fold, window, objective_function, param_bounds, data, method, **kwargs
                     ): window
                     for window in windows
                 }
@@ -248,22 +229,15 @@ class WalkForwardOptimizer:
         else:
             # Sequential execution
             for window in windows:
-                result = self.optimize_fold(
-                    window,
-                    objective_function,
-                    param_bounds,
-                    data,
-                    method,
-                    **kwargs
-                )
+                result = self.optimize_fold(window, objective_function, param_bounds, data, method, **kwargs)
                 fold_results.append(result)
 
         # Sort by fold number
-        fold_results.sort(key=lambda x: x['fold'])
+        fold_results.sort(key=lambda x: x["fold"])
 
         # Calculate aggregate statistics
-        train_scores = [r['train_score'] for r in fold_results]
-        test_scores = [r['test_score'] for r in fold_results]
+        train_scores = [r["train_score"] for r in fold_results]
+        test_scores = [r["test_score"] for r in fold_results]
 
         # Check for overfitting
         avg_train = np.mean(train_scores)
@@ -288,22 +262,18 @@ class WalkForwardOptimizer:
             logger.info("✓ Strategy appears robust")
 
         return {
-            'fold_results': fold_results,
-            'train_scores': train_scores,
-            'test_scores': test_scores,
-            'avg_train_score': avg_train,
-            'avg_test_score': avg_test,
-            'overfit_ratio': overfit_ratio,
-            'is_overfitting': is_overfitting,
-            'n_folds': len(fold_results),
-            'windows': windows
+            "fold_results": fold_results,
+            "train_scores": train_scores,
+            "test_scores": test_scores,
+            "avg_train_score": avg_train,
+            "avg_test_score": avg_test,
+            "overfit_ratio": overfit_ratio,
+            "is_overfitting": is_overfitting,
+            "n_folds": len(fold_results),
+            "windows": windows,
         }
 
-    def get_optimal_params_ensemble(
-        self,
-        results: Dict[str, Any],
-        method: str = 'median'
-    ) -> Dict[str, float]:
+    def get_optimal_params_ensemble(self, results: Dict[str, Any], method: str = "median") -> Dict[str, float]:
         """
         Get ensemble optimal parameters from all folds.
 
@@ -314,26 +284,26 @@ class WalkForwardOptimizer:
         Returns:
             Dictionary of optimal parameters
         """
-        fold_results = results['fold_results']
+        fold_results = results["fold_results"]
 
-        if method == 'best_test':
+        if method == "best_test":
             # Use parameters from fold with best test score
-            best_fold = min(fold_results, key=lambda x: x['test_score'])
-            return best_fold['optimal_params']
+            best_fold = min(fold_results, key=lambda x: x["test_score"])
+            return best_fold["optimal_params"]
 
         # Get all parameter names
-        param_names = list(fold_results[0]['optimal_params'].keys())
+        param_names = list(fold_results[0]["optimal_params"].keys())
 
         # Collect parameter values across folds
         param_values = {name: [] for name in param_names}
         for fold in fold_results:
-            for name, value in fold['optimal_params'].items():
+            for name, value in fold["optimal_params"].items():
                 param_values[name].append(value)
 
         # Ensemble
-        if method == 'median':
+        if method == "median":
             return {name: np.median(values) for name, values in param_values.items()}
-        elif method == 'mean':
+        elif method == "mean":
             return {name: np.mean(values) for name, values in param_values.items()}
         else:
             raise ValueError(f"Unknown ensemble method: {method}")
@@ -420,7 +390,7 @@ def print_walk_forward_report(results: Dict[str, Any]):
     logger.info(f"Average Out-of-Sample Score: {results['avg_test_score']:.4f}")
     logger.info(f"Overfit Ratio: {results['overfit_ratio']:.2f}")
 
-    if results['is_overfitting']:
+    if results["is_overfitting"]:
         logger.info("Status: ⚠️  OVERFITTING DETECTED")
     else:
         logger.info("Status: ✓ ROBUST")
@@ -430,10 +400,10 @@ def print_walk_forward_report(results: Dict[str, Any]):
     logger.info(f"{'Fold':<6} {'Train Score':<15} {'Test Score':<15} {'Ratio':<10}")
     logger.info("-" * 70)
 
-    for fold_result in results['fold_results']:
-        fold = fold_result['fold']
-        train_score = fold_result['train_score']
-        test_score = fold_result['test_score']
+    for fold_result in results["fold_results"]:
+        fold = fold_result["fold"]
+        train_score = fold_result["train_score"]
+        test_score = fold_result["test_score"]
         ratio = test_score / train_score if train_score != 0 else np.inf
 
         logger.info(f"{fold:<6} {train_score:<15.4f} {test_score:<15.4f} {ratio:<10.2f}")
@@ -444,9 +414,9 @@ def print_walk_forward_report(results: Dict[str, Any]):
     logger.info("\nOptimal Parameters by Fold:")
     logger.info("-" * 70)
 
-    for fold_result in results['fold_results']:
+    for fold_result in results["fold_results"]:
         logger.info(f"\nFold {fold_result['fold']}:")
-        for param, value in fold_result['optimal_params'].items():
+        for param, value in fold_result["optimal_params"].items():
             logger.info(f"  {param}: {value:.4f}")
 
     logger.info("=" * 70)

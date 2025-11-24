@@ -11,8 +11,8 @@ class NoiseTrader(BaseTrader):
     Noise trader with multiple strategies: Random, Contrarian, TrendFollower.
     """
 
-    def __init__(self, model, strategy: str = "random", initial_wealth: float = 1000.0, risk_limits=None):
-        super().__init__(model, initial_wealth=initial_wealth, risk_limits=risk_limits)
+    def __init__(self, unique_id: int, model, strategy: str = "random", initial_wealth: float = 1000.0):
+        super().__init__(unique_id, model, initial_wealth=initial_wealth)
         self.strategy = strategy
         self.recency_weight = 0.7
         self.trade_probability = 0.1
@@ -23,19 +23,12 @@ class NoiseTrader(BaseTrader):
         self.price_history = []
 
     def observe_market(self):
-        """Read current market price and return market state."""
+        """Read current market price."""
         current_price = self.model.current_price
         self.price_history.append(current_price)
         # Keep history manageable
         if len(self.price_history) > 100:
             self.price_history.pop(0)
-
-        # Return market state dictionary
-        return {
-            'price': current_price,
-            'spread': self.model.order_book.get_spread() if hasattr(self.model, 'order_book') else 0.0,
-            'mid_price': self.model.order_book.get_mid_price() if hasattr(self.model, 'order_book') else current_price
-        }
 
     def make_decision(self):
         """Generate trading signal based on strategy."""
@@ -92,5 +85,15 @@ class NoiseTrader(BaseTrader):
             timestamp=time.time(),
             trader_id=self.trader_id,  # Use trader_id property from base class
             order_type=OrderType.MARKET
+        )
+        self.submit_orders([order])
+        order = Order(
+            order_id=str(uuid.uuid4()),
+            side=side,
+            price=1.0 if side == "BUY" else 0.0,  # Market order: willing to pay any price
+            quantity=quantity,
+            timestamp=time.time(),
+            trader_id=self.trader_id,  # Use trader_id property from base class
+            order_type=OrderType.MARKET,
         )
         self.submit_orders([order])

@@ -7,18 +7,19 @@ Focused tests for low-coverage modules:
 - src/models/behavioral_biases.py (33% → 70%+)
 """
 
-import pytest
-import numpy as np
-import pandas as pd
 import sys
 from pathlib import Path
+
+import numpy as np
+import pandas as pd
+import pytest
 
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from src.models.jump_diffusion import JumpDiffusionModel
 from src.data.feature_engineering import FeatureEngineer
 from src.models.behavioral_biases import BehavioralBiases
+from src.models.jump_diffusion import JumpDiffusionModel
 
 
 class TestJumpDiffusionModel:
@@ -28,32 +29,28 @@ class TestJumpDiffusionModel:
         """Test model initializes with default parameters"""
         model = JumpDiffusionModel()
 
-        assert model.params['sigma'] == 0.35
-        assert model.params['lambda_base'] == 5
-        assert model.params['p_up'] == 0.4
-        assert model.params['eta_up'] == 20
-        assert model.params['eta_down'] == 12
+        assert model.params["sigma"] == 0.35
+        assert model.params["lambda_base"] == 5
+        assert model.params["p_up"] == 0.4
+        assert model.params["eta_up"] == 20
+        assert model.params["eta_down"] == 12
 
     def test_initialization_custom_params(self):
         """Test model initializes with custom parameters"""
-        custom_params = {
-            'sigma': 0.5,
-            'lambda_base': 10,
-            'p_up': 0.6
-        }
+        custom_params = {"sigma": 0.5, "lambda_base": 10, "p_up": 0.6}
         model = JumpDiffusionModel(params=custom_params)
 
-        assert model.params['sigma'] == 0.5
-        assert model.params['lambda_base'] == 10
-        assert model.params['p_up'] == 0.6
+        assert model.params["sigma"] == 0.5
+        assert model.params["lambda_base"] == 10
+        assert model.params["p_up"] == 0.6
         # Verify defaults still present
-        assert 'eta_up' in model.params
+        assert "eta_up" in model.params
 
     def test_merton_jump_diffusion_produces_valid_output(self):
         """Test Merton model produces valid price paths"""
         model = JumpDiffusionModel()
         S_t = 0.50  # Current price
-        dt = 1/252  # One day
+        dt = 1 / 252  # One day
 
         # Run multiple times for statistical validity
         results = []
@@ -76,9 +73,9 @@ class TestJumpDiffusionModel:
 
     def test_merton_jump_diffusion_zero_volatility(self):
         """Test Merton model with zero volatility"""
-        model = JumpDiffusionModel(params={'sigma': 0.0, 'lambda_base': 0})
+        model = JumpDiffusionModel(params={"sigma": 0.0, "lambda_base": 0})
         S_t = 0.50
-        dt = 1/252
+        dt = 1 / 252
 
         # With no volatility or jumps, price should stay same
         new_price = model.merton_jump_diffusion(S_t, dt)
@@ -89,7 +86,7 @@ class TestJumpDiffusionModel:
         model = JumpDiffusionModel()
 
         # Check if simulate_path method exists
-        if hasattr(model, 'simulate_path'):
+        if hasattr(model, "simulate_path"):
             # Try to call it with likely parameters
             try:
                 path = model.simulate_path(S0=0.5, T=1.0, steps=100)
@@ -104,9 +101,9 @@ class TestJumpDiffusionModel:
         """Test Kou model if implemented"""
         model = JumpDiffusionModel()
 
-        if hasattr(model, 'kou_double_exponential'):
+        if hasattr(model, "kou_double_exponential"):
             S_t = 0.50
-            dt = 1/252
+            dt = 1 / 252
 
             results = []
             for _ in range(100):
@@ -123,7 +120,7 @@ class TestJumpDiffusionModel:
         """Test calibration method if implemented"""
         model = JumpDiffusionModel()
 
-        if hasattr(model, 'calibrate'):
+        if hasattr(model, "calibrate"):
             # Generate fake data
             np.random.seed(42)
             data = np.random.normal(0.5, 0.1, 100)
@@ -132,7 +129,7 @@ class TestJumpDiffusionModel:
             try:
                 calibrated_params = model.calibrate(data)
                 assert isinstance(calibrated_params, dict)
-                assert 'sigma' in calibrated_params or len(calibrated_params) > 0
+                assert "sigma" in calibrated_params or len(calibrated_params) > 0
             except (TypeError, NotImplementedError):
                 pytest.skip("calibrate has different signature or not implemented")
         else:
@@ -154,43 +151,43 @@ class TestFeatureEngineer:
         """Test ELO calculation for home team win"""
         fe = FeatureEngineer()
 
-        result = fe.calculate_elo('CHI', 'GB', 24, 21)
+        result = fe.calculate_elo("CHI", "GB", 24, 21)
 
-        assert 'CHI' in result
-        assert 'GB' in result
-        assert result['CHI'] > fe.base_elo  # Winner gains ELO
-        assert result['GB'] < fe.base_elo   # Loser loses ELO
+        assert "CHI" in result
+        assert "GB" in result
+        assert result["CHI"] > fe.base_elo  # Winner gains ELO
+        assert result["GB"] < fe.base_elo  # Loser loses ELO
 
     def test_calculate_elo_away_win(self):
         """Test ELO calculation for away team win"""
         fe = FeatureEngineer()
 
-        result = fe.calculate_elo('CHI', 'GB', 17, 24)
+        result = fe.calculate_elo("CHI", "GB", 17, 24)
 
-        assert result['CHI'] < fe.base_elo  # Loser loses ELO
-        assert result['GB'] > fe.base_elo   # Winner gains ELO
+        assert result["CHI"] < fe.base_elo  # Loser loses ELO
+        assert result["GB"] > fe.base_elo  # Winner gains ELO
 
     def test_calculate_elo_tie(self):
         """Test ELO calculation for tie game"""
         fe = FeatureEngineer()
 
-        result = fe.calculate_elo('CHI', 'GB', 21, 21)
+        result = fe.calculate_elo("CHI", "GB", 21, 21)
 
         # For evenly matched teams, ELO should stay roughly same
-        assert abs(result['CHI'] - fe.base_elo) < 1
-        assert abs(result['GB'] - fe.base_elo) < 1
+        assert abs(result["CHI"] - fe.base_elo) < 1
+        assert abs(result["GB"] - fe.base_elo) < 1
 
     def test_calculate_elo_updates_stored_values(self):
         """Test that ELO ratings persist across games"""
         fe = FeatureEngineer()
 
         # First game
-        fe.calculate_elo('CHI', 'GB', 24, 21)
-        chi_elo_1 = fe.team_elos['CHI']
+        fe.calculate_elo("CHI", "GB", 24, 21)
+        chi_elo_1 = fe.team_elos["CHI"]
 
         # Second game
-        fe.calculate_elo('CHI', 'DET', 28, 14)
-        chi_elo_2 = fe.team_elos['CHI']
+        fe.calculate_elo("CHI", "DET", 28, 14)
+        chi_elo_2 = fe.team_elos["CHI"]
 
         # CHI won both, so ELO should increase
         assert chi_elo_2 > chi_elo_1
@@ -251,35 +248,29 @@ class TestFeatureEngineer:
         fe = FeatureEngineer()
 
         # Set up some ELO ratings
-        fe.team_elos['CHI'] = 1600
-        fe.team_elos['GB'] = 1550
+        fe.team_elos["CHI"] = 1600
+        fe.team_elos["GB"] = 1550
 
-        game_data = {
-            'home_team': 'CHI',
-            'away_team': 'GB'
-        }
+        game_data = {"home_team": "CHI", "away_team": "GB"}
 
         features = fe.process_game_features(game_data)
 
-        assert features['home_elo'] == 1600
-        assert features['away_elo'] == 1550
-        assert features['elo_diff'] == 50
+        assert features["home_elo"] == 1600
+        assert features["away_elo"] == 1550
+        assert features["elo_diff"] == 50
 
     def test_process_game_features_unknown_teams(self):
         """Test game features with teams not in ELO system"""
         fe = FeatureEngineer()
 
-        game_data = {
-            'home_team': 'UNKNOWN1',
-            'away_team': 'UNKNOWN2'
-        }
+        game_data = {"home_team": "UNKNOWN1", "away_team": "UNKNOWN2"}
 
         features = fe.process_game_features(game_data)
 
         # Should use base ELO for unknown teams
-        assert features['home_elo'] == fe.base_elo
-        assert features['away_elo'] == fe.base_elo
-        assert features['elo_diff'] == 0
+        assert features["home_elo"] == fe.base_elo
+        assert features["away_elo"] == fe.base_elo
+        assert features["elo_diff"] == 0
 
 
 class TestBehavioralBiases:
@@ -294,7 +285,7 @@ class TestBehavioralBiases:
         """Test recency bias calculation"""
         bb = BehavioralBiases()
 
-        if hasattr(bb, 'calculate_recency_bias'):
+        if hasattr(bb, "calculate_recency_bias"):
             # Recent wins should increase bias
             recent_outcomes = [1, 1, 1, 0, 0]  # 3 recent wins out of 5
             bias = bb.calculate_recency_bias(recent_outcomes, window=3)
@@ -308,7 +299,7 @@ class TestBehavioralBiases:
         """Test herding coefficient calculation"""
         bb = BehavioralBiases()
 
-        if hasattr(bb, 'calculate_herding_coefficient'):
+        if hasattr(bb, "calculate_herding_coefficient"):
             # Create prices showing herding behavior
             prices = pd.Series([0.5, 0.52, 0.55, 0.58, 0.6])
             volume = pd.Series([100, 150, 200, 250, 300])
@@ -325,7 +316,7 @@ class TestBehavioralBiases:
         """Test confirmation bias"""
         bb = BehavioralBiases()
 
-        if hasattr(bb, 'apply_confirmation_bias'):
+        if hasattr(bb, "apply_confirmation_bias"):
             belief = 0.7  # Agent believes prob is 70%
             market_price = 0.5  # Market says 50%
 
@@ -343,7 +334,7 @@ class TestBehavioralBiases:
         """Test overconfidence bias"""
         bb = BehavioralBiases()
 
-        if hasattr(bb, 'apply_overconfidence'):
+        if hasattr(bb, "apply_overconfidence"):
             estimate = 0.6
             confidence = 0.8  # High confidence
 
@@ -366,7 +357,7 @@ class TestRiskManagerCoverage:
 
         rm = RiskManager()
 
-        if hasattr(rm, 'check_position_limit'):
+        if hasattr(rm, "check_position_limit"):
             # Test within limits
             try:
                 result = rm.check_position_limit(position=50, max_position=100)
@@ -382,7 +373,7 @@ class TestRiskManagerCoverage:
 
         rm = RiskManager()
 
-        if hasattr(rm, 'calculate_var'):
+        if hasattr(rm, "calculate_var"):
             returns = pd.Series([0.01, -0.02, 0.03, -0.01, 0.02])
 
             try:
@@ -396,16 +387,11 @@ class TestRiskManagerCoverage:
 
 def run_coverage_boost_tests():
     """Run all coverage boost tests"""
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print("COVERAGE BOOST TEST SUITE")
-    print("="*70)
+    print("=" * 70)
 
-    result = pytest.main([
-        __file__,
-        '-v',
-        '--tb=short',
-        '-s'
-    ])
+    result = pytest.main([__file__, "-v", "--tb=short", "-s"])
 
     return result
 

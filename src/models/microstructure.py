@@ -1,11 +1,13 @@
+from typing import Any, Dict
+
 import numpy as np
-from typing import Dict, Any
+
 
 class MicrostructureModel:
     """
     Market Microstructure Models for price impact, spread calculation, and liquidity.
     """
-    
+
     # Parameters from research
     KYLE_LAMBDA = 1.5  # Prediction markets tend to be less liquid
     ETA = 0.314
@@ -21,7 +23,7 @@ class MicrostructureModel:
         sigma_u: Volatility of noise trading
         """
         if sigma_u == 0:
-            return self.KYLE_LAMBDA # Fallback
+            return self.KYLE_LAMBDA  # Fallback
         return 0.5 * np.sqrt(sigma_v / sigma_u)
 
     def calculate_spread(self, order_processing_cost: float, inventory_cost: float, adverse_selection_cost: float) -> float:

@@ -1,11 +1,30 @@
+# Python
 venv/
 __pycache__/
 *.pyc
-.DS_Store
+*.pyo
+*.pyd
+.Python
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+
+# Environment
 .env
+.env.local
+
+# IDE
+.DS_Store
 .idea/
 .vscode/
+*.swp
+*.swo
+
+# Logs
 *.log
+logs/
 
 # Testing
 .pytest_cache/
@@ -15,10 +34,27 @@ coverage.xml
 *.cover
 .hypothesis/
 
-# mypy
+# Type checking
 .mypy_cache/
 .dmypy.json
 dmypy.json
+.pytype/
 
-# Bandit
+# Security
 bandit-report.json
+
+# Results (optional - commit if needed)
+results/*.csv
+results/*.png
+results/*.json
+
+# Data (optional - commit if needed)
+data/historical/*.csv
+data/historical/*.json
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# OS
+Thumbs.db

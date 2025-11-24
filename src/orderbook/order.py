@@ -1,7 +1,8 @@
+import time
 from dataclasses import dataclass
 from enum import Enum, auto
 from typing import Optional
-import time
+
 
 class OrderType(Enum):
     MARKET = auto()
@@ -9,9 +10,11 @@ class OrderType(Enum):
     FOK = auto()  # Fill-or-Kill
     IOC = auto()  # Immediate-or-Cancel
 
+
 class OrderSide(Enum):
     BUY = "BUY"
     SELL = "SELL"
+
 
 @dataclass
 class Order:
@@ -44,7 +47,7 @@ class Order:
             raise ValueError("Price must be non-negative")
         if self.quantity <= 0:
             raise ValueError("Quantity must be positive")
-        if self.side not in ['BUY', 'SELL']:
+        if self.side not in ["BUY", "SELL"]:
             raise ValueError("Side must be 'BUY' or 'SELL'")
 
     def fill(self, quantity: float):

@@ -17,14 +17,16 @@ Usage:
     markets = fetcher.fetch_nfl_markets(season=2024)
     fetcher.download_candlesticks(markets)
 """
-import os
+
 import json
-import pandas as pd
-import numpy as np
-from pathlib import Path
-from typing import List, Dict, Any, Optional
-from datetime import datetime, timedelta
+import os
 import time
+from datetime import datetime, timedelta
+from pathlib import Path
+from typing import Any, Dict, List, Optional
+
+import numpy as np
+import pandas as pd
 
 from src.execution.kalshi_client import KalshiClient
 
@@ -32,11 +34,7 @@ from src.execution.kalshi_client import KalshiClient
 class KalshiHistoricalDataFetcher:
     """Fetch and cache historical Kalshi market data."""
 
-    def __init__(
-        self,
-        cache_dir: str = "data/historical",
-        kalshi_client: Optional[KalshiClient] = None
-    ):
+    def __init__(self, cache_dir: str = "data/historical", kalshi_client: Optional[KalshiClient] = None):
         """
         Initialize historical data fetcher.
 
@@ -55,10 +53,7 @@ class KalshiHistoricalDataFetcher:
         self.client = kalshi_client or KalshiClient()
 
     def fetch_nfl_markets(
-        self,
-        season: Optional[int] = None,
-        status: str = "settled",
-        use_cache: bool = True
+        self, season: Optional[int] = None, status: str = "settled", use_cache: bool = True, max_markets: Optional[int] = None
     ) -> pd.DataFrame:
         """
         Fetch NFL markets from Kalshi.
@@ -81,10 +76,9 @@ class KalshiHistoricalDataFetcher:
         print(f"🌐 Fetching {status} NFL markets from Kalshi API...")
 
         # Fetch markets using pagination
-        # Kalshi uses series tickers like 'HIGHFB' for NFL
+        # Kalshi uses series ticker 'KXMVENFLSINGLEGAME' for NFL single game markets
         all_markets = self.client.get_all_markets_paginated(
-            series_ticker="HIGHFB",  # NFL high scorer markets
-            status=status
+            series_ticker="KXMVENFLSINGLEGAME", status=status, max_results=max_markets
         )
 
         if not all_markets:
@@ -97,12 +91,16 @@ class KalshiHistoricalDataFetcher:
         df = pd.DataFrame(all_markets)
 
         # Filter by season if specified
-        if season and 'ticker' in df.columns:
-            # Kalshi tickers often include date: HIGHFB-24SEP15-B-KC
-            # Extract year from ticker
-            df['year'] = df['ticker'].str.extract(r'-(\d{2})', expand=False)
-            df['year'] = '20' + df['year']  # Convert 24 -> 2024
-            df = df[df['year'] == str(season)]
+        if season and "ticker" in df.columns:
+            # New format: KXMVENFLSINGLEGAME-S2025... (S followed by 4-digit year)
+            df["year"] = df["ticker"].str.extract(r"-S(\d{4})", expand=False)
+            if df["year"].notna().any():
+                df = df[df["year"] == str(season)]
+            else:
+                # Fallback: try old format HIGHFB-24SEP15-B-KC
+                df["year"] = df["ticker"].str.extract(r"-(\d{2})", expand=False)
+                df["year"] = "20" + df["year"]  # Convert 24 -> 2024
+                df = df[df["year"] == str(season)]
 
         # Save to cache
         df.to_csv(cache_file, index=False)
@@ -111,11 +109,7 @@ class KalshiHistoricalDataFetcher:
         return df
 
     def download_candlesticks(
-        self,
-        markets: pd.DataFrame,
-        period_interval: int = 60,
-        use_cache: bool = True,
-        max_markets: Optional[int] = None
+        self, markets: pd.DataFrame, period_interval: int = 60, use_cache: bool = True, max_markets: Optional[int] = None
     ) -> Dict[str, pd.DataFrame]:
         """
         Download candlestick data for multiple markets.
@@ -136,8 +130,8 @@ class KalshiHistoricalDataFetcher:
         print(f"   Interval: {period_interval} minutes")
 
         for i, row in markets.head(total).iterrows():
-            ticker = row.get('ticker')
-            series_ticker = row.get('series_ticker', 'HIGHFB')
+            ticker = row.get("ticker")
+            series_ticker = row.get("series_ticker", "HIGHFB")
 
             if not ticker:
                 continue
@@ -154,12 +148,10 @@ class KalshiHistoricalDataFetcher:
             # Download from API
             try:
                 response = self.client.get_market_candlesticks(
-                    series_ticker=series_ticker,
-                    market_ticker=ticker,
-                    period_interval=period_interval
+                    series_ticker=series_ticker, market_ticker=ticker, period_interval=period_interval
                 )
 
-                candles = response.get('candlesticks', [])
+                candles = response.get("candlesticks", [])
 
                 if candles:
                     df = pd.DataFrame(candles)
@@ -179,11 +171,7 @@ class KalshiHistoricalDataFetcher:
         print(f"✅ Downloaded {len(candlesticks)} candlestick datasets")
         return candlesticks
 
-    def load_historical_backtest_data(
-        self,
-        season: int = 2024,
-        max_games: Optional[int] = None
-    ) -> List[Dict[str, Any]]:
+    def load_historical_backtest_data(self, season: int = 2024, max_games: Optional[int] = None) -> List[Dict[str, Any]]:
         """
         Load historical data formatted for backtesting.
 
@@ -202,11 +190,7 @@ class KalshiHistoricalDataFetcher:
             return []
 
         # Download candlesticks
-        candlesticks = self.download_candlesticks(
-            markets,
-            period_interval=60,  # 1-hour intervals
-            max_markets=max_games
-        )
+        candlesticks = self.download_candlesticks(markets, period_interval=60, max_markets=max_games)  # 1-hour intervals
 
         # Format for backtest
         scenarios = []
@@ -215,40 +199,46 @@ class KalshiHistoricalDataFetcher:
             if candles_df.empty:
                 continue
 
-            market_info = markets[markets['ticker'] == ticker].iloc[0]
+            market_info = markets[markets["ticker"] == ticker].iloc[0]
 
             # Extract price path
-            if 'close' in candles_df.columns:
-                price_path = candles_df['close'].tolist()
+            if "close" in candles_df.columns:
+                price_path = candles_df["close"].tolist()
             else:
                 continue
 
             # Get outcome (yes=1, no=0)
-            result = market_info.get('result', None)
-            outcome = 1 if result == 'yes' else 0
+            result = market_info.get("result", None)
+            outcome = 1 if result == "yes" else 0
 
             # Get initial and final prices
             initial_price = price_path[0] if price_path else 0.5
             final_price = price_path[-1] if price_path else 0.5
 
             # Get event metadata
-            event_ticker = market_info.get('event_ticker', '')
-            market_title = market_info.get('title', ticker)
+            event_ticker = market_info.get("event_ticker", "")
+            market_title = market_info.get("title", ticker)
 
-            scenarios.append({
-                'game_id': len(scenarios),
-                'ticker': ticker,
-                'event_ticker': event_ticker,
-                'title': market_title,
-                'true_prob': final_price,  # Market's final assessment
-                'initial_price': initial_price,
-                'price_path': price_path,
-                'outcome': outcome,
-                'start_time': datetime.fromtimestamp(candles_df['start_ts'].iloc[0]) if 'start_ts' in candles_df.columns else None,
-                'end_time': datetime.fromtimestamp(candles_df['end_ts'].iloc[-1]) if 'end_ts' in candles_df.columns else None,
-                'num_candlesticks': len(candles_df),
-                'is_real_data': True  # Flag to indicate real vs synthetic
-            })
+            scenarios.append(
+                {
+                    "game_id": len(scenarios),
+                    "ticker": ticker,
+                    "event_ticker": event_ticker,
+                    "title": market_title,
+                    "true_prob": final_price,  # Market's final assessment
+                    "initial_price": initial_price,
+                    "price_path": price_path,
+                    "outcome": outcome,
+                    "start_time": (
+                        datetime.fromtimestamp(candles_df["start_ts"].iloc[0]) if "start_ts" in candles_df.columns else None
+                    ),
+                    "end_time": (
+                        datetime.fromtimestamp(candles_df["end_ts"].iloc[-1]) if "end_ts" in candles_df.columns else None
+                    ),
+                    "num_candlesticks": len(candles_df),
+                    "is_real_data": True,  # Flag to indicate real vs synthetic
+                }
+            )
 
         print(f"\n✅ Loaded {len(scenarios)} historical game scenarios")
         print(f"   Average price path length: {np.mean([len(s['price_path']) for s in scenarios]):.1f} candlesticks")
@@ -263,10 +253,10 @@ class KalshiHistoricalDataFetcher:
         total_size = sum(f.stat().st_size for f in market_files + candle_files)
 
         return {
-            'market_files': len(market_files),
-            'candlestick_files': len(candle_files),
-            'total_size_mb': total_size / (1024 * 1024),
-            'cache_dir': str(self.cache_dir)
+            "market_files": len(market_files),
+            "candlestick_files": len(candle_files),
+            "total_size_mb": total_size / (1024 * 1024),
+            "cache_dir": str(self.cache_dir),
         }
 
     def clear_cache(self):

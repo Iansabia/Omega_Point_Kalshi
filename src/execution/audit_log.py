@@ -16,23 +16,25 @@ Use cases:
 - System configuration changes
 - API key usage tracking
 """
-import json
-import time
-import hashlib
-import threading
+
+import atexit
 import gzip
+import hashlib
+import json
 import os
-from typing import Dict, Any, List, Optional
-from dataclasses import dataclass, asdict
+import threading
+import time
+from dataclasses import asdict, dataclass
 from datetime import datetime, timedelta
 from pathlib import Path
 from queue import Queue
-import atexit
+from typing import Any, Dict, List, Optional
 
 
 @dataclass
 class AuditEntry:
     """Single audit log entry."""
+
     timestamp: float
     event_type: str
     user_id: Optional[str]
@@ -52,10 +54,7 @@ class AuditEntry:
 
     def calculate_checksum(self) -> str:
         """Calculate SHA256 checksum of entry."""
-        data = {
-            k: v for k, v in self.to_dict().items()
-            if k not in ['checksum', 'sequence']
-        }
+        data = {k: v for k, v in self.to_dict().items() if k not in ["checksum", "sequence"]}
         content = json.dumps(data, sort_keys=True)
         return hashlib.sha256(content.encode()).hexdigest()
 
@@ -74,7 +73,7 @@ class WriteAheadLog:
         max_file_size: int = 100 * 1024 * 1024,  # 100 MB
         rotation_interval: int = 86400,  # 24 hours
         compression: bool = True,
-        async_write: bool = True
+        async_write: bool = True,
     ):
         """Initialize write-ahead log."""
         self.log_dir = Path(log_dir)
@@ -176,14 +175,14 @@ class WriteAheadLog:
         # Create new file
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         self.current_file = self.log_dir / f"audit_{timestamp}.log"
-        self.current_handle = open(self.current_file, 'a', encoding='utf-8')
+        self.current_handle = open(self.current_file, "a", encoding="utf-8")
         self.file_created_at = time.time()
 
     def _compress_file(self, filepath: Path):
         """Compress log file with gzip."""
         try:
-            with open(filepath, 'rb') as f_in:
-                with gzip.open(f"{filepath}.gz", 'wb') as f_out:
+            with open(filepath, "rb") as f_in:
+                with gzip.open(f"{filepath}.gz", "wb") as f_out:
                     f_out.writelines(f_in)
             # Remove original file
             filepath.unlink()
@@ -196,7 +195,7 @@ class WriteAheadLog:
         end_time: Optional[float] = None,
         event_type: Optional[str] = None,
         user_id: Optional[str] = None,
-        max_results: int = 1000
+        max_results: int = 1000,
     ) -> List[AuditEntry]:
         """
         Query audit log entries.
@@ -222,11 +221,11 @@ class WriteAheadLog:
                 continue
 
             # Read file (decompress if needed)
-            if log_file.suffix == '.gz':
-                with gzip.open(log_file, 'rt', encoding='utf-8') as f:
+            if log_file.suffix == ".gz":
+                with gzip.open(log_file, "rt", encoding="utf-8") as f:
                     lines = f.readlines()
             else:
-                with open(log_file, 'r', encoding='utf-8') as f:
+                with open(log_file, "r", encoding="utf-8") as f:
                     lines = f.readlines()
 
             # Parse and filter entries
@@ -280,11 +279,11 @@ class WriteAheadLog:
 
         for log_file in log_files:
             # Read file
-            if log_file.suffix == '.gz':
-                with gzip.open(log_file, 'rt', encoding='utf-8') as f:
+            if log_file.suffix == ".gz":
+                with gzip.open(log_file, "rt", encoding="utf-8") as f:
                     lines = f.readlines()
             else:
-                with open(log_file, 'r', encoding='utf-8') as f:
+                with open(log_file, "r", encoding="utf-8") as f:
                     lines = f.readlines()
 
             for line in lines:
@@ -315,7 +314,7 @@ class WriteAheadLog:
             "corrupted_entries": corrupted_entries,
             "missing_checksums": missing_checksums,
             "sequence_gaps": sequence_gaps,
-            "integrity_ok": corrupted_entries == 0 and missing_checksums == 0 and len(sequence_gaps) == 0
+            "integrity_ok": corrupted_entries == 0 and missing_checksums == 0 and len(sequence_gaps) == 0,
         }
 
     def close(self):
@@ -336,15 +335,7 @@ class AuditLogger:
         """Initialize audit logger."""
         self.wal = wal or WriteAheadLog()
 
-    def log_trade(
-        self,
-        user_id: str,
-        order_id: str,
-        side: str,
-        quantity: float,
-        price: float,
-        market: str
-    ):
+    def log_trade(self, user_id: str, order_id: str, side: str, quantity: float, price: float, market: str):
         """Log trade execution."""
         entry = AuditEntry(
             timestamp=time.time(),
@@ -352,25 +343,11 @@ class AuditLogger:
             user_id=user_id,
             action="execute",
             resource=f"order/{order_id}",
-            details={
-                "side": side,
-                "quantity": quantity,
-                "price": price,
-                "market": market,
-                "value": quantity * price
-            }
+            details={"side": side, "quantity": quantity, "price": price, "market": market, "value": quantity * price},
         )
         self.wal.write(entry)
 
-    def log_order(
-        self,
-        user_id: str,
-        order_id: str,
-        side: str,
-        order_type: str,
-        quantity: float,
-        price: Optional[float]
-    ):
+    def log_order(self, user_id: str, order_id: str, side: str, order_type: str, quantity: float, price: Optional[float]):
         """Log order placement."""
         entry = AuditEntry(
             timestamp=time.time(),
@@ -378,22 +355,12 @@ class AuditLogger:
             user_id=user_id,
             action="place",
             resource=f"order/{order_id}",
-            details={
-                "side": side,
-                "order_type": order_type,
-                "quantity": quantity,
-                "price": price
-            }
+            details={"side": side, "order_type": order_type, "quantity": quantity, "price": price},
         )
         self.wal.write(entry)
 
     def log_risk_violation(
-        self,
-        user_id: str,
-        violation_type: str,
-        current_value: float,
-        limit: float,
-        details: Dict[str, Any]
+        self, user_id: str, violation_type: str, current_value: float, limit: float, details: Dict[str, Any]
     ):
         """Log risk limit violation."""
         entry = AuditEntry(
@@ -402,22 +369,11 @@ class AuditLogger:
             user_id=user_id,
             action="block",
             resource=f"risk/{violation_type}",
-            details={
-                "violation_type": violation_type,
-                "current_value": current_value,
-                "limit": limit,
-                **details
-            }
+            details={"violation_type": violation_type, "current_value": current_value, "limit": limit, **details},
         )
         self.wal.write(entry)
 
-    def log_config_change(
-        self,
-        user_id: str,
-        config_key: str,
-        old_value: Any,
-        new_value: Any
-    ):
+    def log_config_change(self, user_id: str, config_key: str, old_value: Any, new_value: Any):
         """Log configuration change."""
         entry = AuditEntry(
             timestamp=time.time(),
@@ -425,22 +381,11 @@ class AuditLogger:
             user_id=user_id,
             action="update",
             resource=f"config/{config_key}",
-            details={
-                "old_value": str(old_value),
-                "new_value": str(new_value)
-            }
+            details={"old_value": str(old_value), "new_value": str(new_value)},
         )
         self.wal.write(entry)
 
-    def log_api_call(
-        self,
-        user_id: str,
-        api: str,
-        endpoint: str,
-        method: str,
-        status_code: int,
-        latency_ms: float
-    ):
+    def log_api_call(self, user_id: str, api: str, endpoint: str, method: str, status_code: int, latency_ms: float):
         """Log API call."""
         entry = AuditEntry(
             timestamp=time.time(),
@@ -448,10 +393,7 @@ class AuditLogger:
             user_id=user_id,
             action=method,
             resource=f"{api}/{endpoint}",
-            details={
-                "status_code": status_code,
-                "latency_ms": latency_ms
-            }
+            details={"status_code": status_code, "latency_ms": latency_ms},
         )
         self.wal.write(entry)
 
@@ -461,9 +403,4 @@ audit_logger = AuditLogger()
 
 
 # Export public API
-__all__ = [
-    'AuditEntry',
-    'WriteAheadLog',
-    'AuditLogger',
-    'audit_logger'
-]
+__all__ = ["AuditEntry", "WriteAheadLog", "AuditLogger", "audit_logger"]

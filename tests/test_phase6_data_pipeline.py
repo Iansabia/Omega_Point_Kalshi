@@ -3,12 +3,13 @@ Phase 6 Validation Tests: Data Pipeline Integration
 Tests for NFL data loading, Kalshi API, and feature engineering
 """
 
-import pytest
-import numpy as np
-import sys
-from pathlib import Path
 import os
+import sys
 from datetime import datetime
+from pathlib import Path
+
+import numpy as np
+import pytest
 
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -19,25 +20,21 @@ class TestKalshiIntegration:
 
     def test_kalshi_client_initialization(self):
         """Test Kalshi client can be initialized"""
-        print("\n" + "="*70)
+        print("\n" + "=" * 70)
         print("TEST: Kalshi Client Initialization")
-        print("="*70)
+        print("=" * 70)
 
         try:
             from src.execution.kalshi_client import KalshiClient
 
             # Check if credentials are available
-            email = os.getenv('KALSHI_EMAIL')
-            password = os.getenv('KALSHI_PASSWORD')
+            email = os.getenv("KALSHI_EMAIL")
+            password = os.getenv("KALSHI_PASSWORD")
 
             if not email or not password:
                 pytest.skip("Kalshi credentials not found in environment")
 
-            client = KalshiClient(
-                email=email,
-                password=password,
-                demo=True  # Use demo environment
-            )
+            client = KalshiClient(email=email, password=password, demo=True)  # Use demo environment
 
             print(f"✓ Client initialized")
             print(f"  Demo mode: True")
@@ -64,15 +61,15 @@ class TestKalshiIntegration:
 
     def test_kalshi_market_data_fetch(self):
         """Test fetching market data from Kalshi"""
-        print("\n" + "="*70)
+        print("\n" + "=" * 70)
         print("TEST: Kalshi Market Data Fetch")
-        print("="*70)
+        print("=" * 70)
 
         try:
             from src.execution.kalshi_client import KalshiClient
 
-            email = os.getenv('KALSHI_EMAIL')
-            password = os.getenv('KALSHI_PASSWORD')
+            email = os.getenv("KALSHI_EMAIL")
+            password = os.getenv("KALSHI_PASSWORD")
 
             if not email or not password:
                 pytest.skip("Kalshi credentials not found")
@@ -87,7 +84,7 @@ class TestKalshiIntegration:
                 print(f"✓ Found {len(markets)} markets")
 
                 if len(markets) > 0:
-                    ticker = markets[0]['ticker']
+                    ticker = markets[0]["ticker"]
                     market_data = client.get_market_data(ticker)
 
                     print(f"  Ticker: {ticker}")
@@ -111,22 +108,22 @@ class TestNFLDataPipeline:
 
     def test_nfl_data_structure_exists(self):
         """Test that NFL data handling module exists"""
-        print("\n" + "="*70)
+        print("\n" + "=" * 70)
         print("TEST: NFL Data Handler Module")
-        print("="*70)
+        print("=" * 70)
 
         try:
             # Check if data directory exists
-            data_dir = Path(__file__).parent.parent / 'src' / 'data'
+            data_dir = Path(__file__).parent.parent / "src" / "data"
             assert data_dir.exists(), "Data directory should exist"
 
             print(f"✓ Data directory exists: {data_dir}")
 
             # List available data modules
-            data_modules = list(data_dir.glob('*.py'))
+            data_modules = list(data_dir.glob("*.py"))
             print(f"✓ Found {len(data_modules)} data modules:")
             for mod in data_modules:
-                if mod.name != '__init__.py':
+                if mod.name != "__init__.py":
                     print(f"  - {mod.name}")
 
             assert len(data_modules) > 0, "Should have data modules"
@@ -137,9 +134,9 @@ class TestNFLDataPipeline:
 
     def test_nfl_data_loading_capability(self):
         """Test NFL data can be loaded (if available)"""
-        print("\n" + "="*70)
+        print("\n" + "=" * 70)
         print("TEST: NFL Data Loading")
-        print("="*70)
+        print("=" * 70)
 
         try:
             # Check if we can load NFL data
@@ -154,9 +151,9 @@ class TestNFLDataPipeline:
             print(f"✓ Pandas available for parquet reading")
 
             # Check if data directory has any cached data
-            data_cache = Path(__file__).parent.parent / 'data'
+            data_cache = Path(__file__).parent.parent / "data"
             if data_cache.exists():
-                cached_files = list(data_cache.glob('*.parquet')) + list(data_cache.glob('*.csv'))
+                cached_files = list(data_cache.glob("*.parquet")) + list(data_cache.glob("*.csv"))
                 print(f"✓ Cached data files: {len(cached_files)}")
                 for f in cached_files[:5]:  # Show first 5
                     print(f"  - {f.name}")
@@ -172,9 +169,9 @@ class TestFeatureEngineering:
 
     def test_basic_feature_calculations(self):
         """Test basic feature engineering functions"""
-        print("\n" + "="*70)
+        print("\n" + "=" * 70)
         print("TEST: Feature Engineering")
-        print("="*70)
+        print("=" * 70)
 
         # Test ELO rating calculation
         def update_elo(winner_elo, loser_elo, k_factor=32):
@@ -234,9 +231,9 @@ class TestDataQuality:
 
     def test_data_validation(self):
         """Test data validation functions"""
-        print("\n" + "="*70)
+        print("\n" + "=" * 70)
         print("TEST: Data Quality Validation")
-        print("="*70)
+        print("=" * 70)
 
         # Test outlier detection
         def detect_outliers(data, threshold=2.5):
@@ -264,18 +261,18 @@ class TestDataQuality:
         assert 6 in outliers, "Should identify index 6 as outlier"
 
         # Test missing data handling
-        def handle_missing(data, method='forward_fill'):
+        def handle_missing(data, method="forward_fill"):
             """Handle missing data"""
             result = data.copy()
             mask = ~np.isnan(result)
 
-            if method == 'forward_fill':
+            if method == "forward_fill":
                 # Forward fill
                 idx = np.where(~mask)[0]
                 if len(idx) > 0 and idx[0] > 0:
                     for i in idx:
                         if i > 0:
-                            result[i] = result[i-1]
+                            result[i] = result[i - 1]
 
             return result
 
@@ -296,42 +293,44 @@ class TestIntegrationReadiness:
 
     def test_end_to_end_capability(self):
         """Test that all components can work together"""
-        print("\n" + "="*70)
+        print("\n" + "=" * 70)
         print("TEST: Integration Readiness")
-        print("="*70)
+        print("=" * 70)
 
         components = {
-            'Kalshi Client': False,
-            'NFL Data Handler': False,
-            'Feature Engineering': False,
-            'Data Storage': False,
-            'Risk Manager': False
+            "Kalshi Client": False,
+            "NFL Data Handler": False,
+            "Feature Engineering": False,
+            "Data Storage": False,
+            "Risk Manager": False,
         }
 
         # Check Kalshi client
         try:
             from src.execution.kalshi_client import KalshiClient
-            components['Kalshi Client'] = True
+
+            components["Kalshi Client"] = True
         except ImportError:
             pass
 
         # Check data directory structure
-        data_dir = Path(__file__).parent.parent / 'src' / 'data'
+        data_dir = Path(__file__).parent.parent / "src" / "data"
         if data_dir.exists():
-            components['NFL Data Handler'] = True
+            components["NFL Data Handler"] = True
 
         # Feature engineering (tested above)
-        components['Feature Engineering'] = True
+        components["Feature Engineering"] = True
 
         # Check data storage directory
-        data_storage = Path(__file__).parent.parent / 'data'
+        data_storage = Path(__file__).parent.parent / "data"
         if data_storage.exists():
-            components['Data Storage'] = True
+            components["Data Storage"] = True
 
         # Check risk manager
         try:
             from src.risk.risk_manager import RiskManager
-            components['Risk Manager'] = True
+
+            components["Risk Manager"] = True
         except ImportError:
             pass
 
@@ -354,16 +353,11 @@ class TestIntegrationReadiness:
 def run_all_phase6_validations():
     """Run all Phase 6 validation tests"""
 
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print("PHASE 6 VALIDATION: DATA PIPELINE INTEGRATION")
-    print("="*70)
+    print("=" * 70)
 
-    result = pytest.main([
-        __file__,
-        '-v',
-        '--tb=short',
-        '-s'
-    ])
+    result = pytest.main([__file__, "-v", "--tb=short", "-s"])
 
     return result
 

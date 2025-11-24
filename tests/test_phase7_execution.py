@@ -3,10 +3,11 @@ Phase 7 Validation Tests: Execution System and Risk Management
 Tests for order routing, risk management, and transaction costs
 """
 
-import pytest
-import numpy as np
 import sys
 from pathlib import Path
+
+import numpy as np
+import pytest
 
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -17,19 +18,15 @@ class TestRiskManager:
 
     def test_risk_manager_initialization(self):
         """Test risk manager can be created with limits"""
-        print("\n" + "="*70)
+        print("\n" + "=" * 70)
         print("TEST: Risk Manager Initialization")
-        print("="*70)
+        print("=" * 70)
 
         try:
-            from src.risk.risk_manager import RiskManager, RiskLimits
+            from src.risk.risk_manager import RiskLimits, RiskManager
 
             # Create custom limits
-            limits = RiskLimits(
-                max_position_size=1000,
-                max_total_drawdown=0.15,
-                max_loss_per_trade=50.0
-            )
+            limits = RiskLimits(max_position_size=1000, max_total_drawdown=0.15, max_loss_per_trade=50.0)
 
             rm = RiskManager(limits=limits)
 
@@ -47,22 +44,22 @@ class TestRiskManager:
 
     def test_position_limit_enforcement(self):
         """Test position limits are enforced"""
-        print("\n" + "="*70)
+        print("\n" + "=" * 70)
         print("TEST: Position Limit Enforcement")
-        print("="*70)
+        print("=" * 70)
 
         try:
-            from src.risk.risk_manager import RiskManager, RiskLimits
+            from src.risk.risk_manager import RiskLimits, RiskManager
 
             # Create limits with max 3 concurrent positions and 100% trade probability for deterministic testing
             limits = RiskLimits(max_positions=3, trade_probability=1.0)
             rm = RiskManager(limits=limits)
 
             # Test within limits - add 2 positions
-            rm.positions = {'GAME1': 100, 'GAME2': 200}
+            rm.positions = {"GAME1": 100, "GAME2": 200}
 
             # Should allow trade with high edge when under position limit
-            allowed, reason = rm.can_trade('GAME3', edge=0.10)
+            allowed, reason = rm.can_trade("GAME3", edge=0.10)
             print(f"✓ Trade Check (Within Limits):")
             print(f"  Current positions: {len(rm.positions)}")
             print(f"  Max positions: {rm.limits.max_positions}")
@@ -73,9 +70,9 @@ class TestRiskManager:
             assert allowed, "Trade within limits should be allowed"
 
             # Test exceeding limits - try to add 4th position
-            rm.positions = {'GAME1': 100, 'GAME2': 200, 'GAME3': 150}
+            rm.positions = {"GAME1": 100, "GAME2": 200, "GAME3": 150}
 
-            allowed, reason = rm.can_trade('GAME4', edge=0.10)
+            allowed, reason = rm.can_trade("GAME4", edge=0.10)
             print(f"\n✓ Trade Check (Exceeds Limits):")
             print(f"  Current positions: {len(rm.positions)}")
             print(f"  Max positions: {rm.limits.max_positions}")
@@ -90,12 +87,12 @@ class TestRiskManager:
 
     def test_drawdown_monitoring(self):
         """Test drawdown monitoring"""
-        print("\n" + "="*70)
+        print("\n" + "=" * 70)
         print("TEST: Drawdown Monitoring")
-        print("="*70)
+        print("=" * 70)
 
         try:
-            from src.risk.risk_manager import RiskManager, RiskLimits
+            from src.risk.risk_manager import RiskLimits, RiskManager
 
             # Set tight drawdown limit of 15%
             limits = RiskLimits(max_total_drawdown=0.15)
@@ -134,9 +131,9 @@ class TestRiskManager:
 
     def test_kill_switch(self):
         """Test kill switch functionality"""
-        print("\n" + "="*70)
+        print("\n" + "=" * 70)
         print("TEST: Kill Switch")
-        print("="*70)
+        print("=" * 70)
 
         try:
             from src.risk.risk_manager import RiskManager
@@ -144,12 +141,12 @@ class TestRiskManager:
             rm = RiskManager()
 
             # Simulate kill switch activation
-            initial_state = rm.is_active if hasattr(rm, 'is_active') else True
+            initial_state = rm.is_active if hasattr(rm, "is_active") else True
 
             print(f"✓ Initial state: {'Active' if initial_state else 'Inactive'}")
 
             # Test emergency stop (if method exists)
-            if hasattr(rm, 'emergency_stop'):
+            if hasattr(rm, "emergency_stop"):
                 rm.emergency_stop()
                 print(f"✓ Emergency stop triggered")
 
@@ -170,35 +167,30 @@ class TestTransactionCost:
 
     def test_market_impact_estimation(self):
         """Test market impact estimation"""
-        print("\n" + "="*70)
+        print("\n" + "=" * 70)
         print("TEST: Market Impact Estimation")
-        print("="*70)
+        print("=" * 70)
 
         # Almgren-Chriss model: Impact = η × σ × (Q/V)^γ
-        def estimate_market_impact(order_size, daily_volume, volatility,
-                                   eta=0.314, gamma=0.142):
+        def estimate_market_impact(order_size, daily_volume, volatility, eta=0.314, gamma=0.142):
             if daily_volume == 0:
                 return 0.0
             psi = order_size / daily_volume
-            return eta * volatility * (psi ** gamma)
+            return eta * volatility * (psi**gamma)
 
         # Test scenarios
         scenarios = [
-            {'order': 100, 'volume': 10000, 'vol': 0.2, 'name': 'Small order'},
-            {'order': 1000, 'volume': 10000, 'vol': 0.2, 'name': 'Medium order'},
-            {'order': 2000, 'volume': 10000, 'vol': 0.2, 'name': 'Large order'}
+            {"order": 100, "volume": 10000, "vol": 0.2, "name": "Small order"},
+            {"order": 1000, "volume": 10000, "vol": 0.2, "name": "Medium order"},
+            {"order": 2000, "volume": 10000, "vol": 0.2, "name": "Large order"},
         ]
 
         print(f"✓ Market Impact Scenarios:")
 
         for scenario in scenarios:
-            impact = estimate_market_impact(
-                scenario['order'],
-                scenario['volume'],
-                scenario['vol']
-            )
+            impact = estimate_market_impact(scenario["order"], scenario["volume"], scenario["vol"])
 
-            cost = scenario['order'] * impact
+            cost = scenario["order"] * impact
 
             print(f"\n  {scenario['name']}:")
             print(f"    Order size: {scenario['order']}")
@@ -212,55 +204,55 @@ class TestTransactionCost:
 
     def test_slippage_simulation(self):
         """Test slippage modeling"""
-        print("\n" + "="*70)
+        print("\n" + "=" * 70)
         print("TEST: Slippage Simulation")
-        print("="*70)
+        print("=" * 70)
 
         def simulate_slippage(order_type, order_price, market_data, is_buy):
             """Simulate realistic slippage"""
 
-            if order_type == 'MARKET':
+            if order_type == "MARKET":
                 # Market orders: Execute at ask (buy) or bid (sell) + slippage
-                base_price = market_data['ask'] if is_buy else market_data['bid']
+                base_price = market_data["ask"] if is_buy else market_data["bid"]
                 slippage_factor = 0.0005  # 5 bps
                 fill_price = base_price * (1 + slippage_factor if is_buy else 1 - slippage_factor)
 
-            elif order_type == 'LIMIT':
+            elif order_type == "LIMIT":
                 # Limit orders: May not fill, or fill at limit price
                 fill_price = order_price  # If filled
 
             else:
-                fill_price = market_data['mid']
+                fill_price = market_data["mid"]
 
             return fill_price
 
         # Test market order
-        market_data = {'bid': 0.499, 'ask': 0.501, 'mid': 0.500}
+        market_data = {"bid": 0.499, "ask": 0.501, "mid": 0.500}
 
-        buy_fill = simulate_slippage('MARKET', None, market_data, is_buy=True)
-        sell_fill = simulate_slippage('MARKET', None, market_data, is_buy=False)
+        buy_fill = simulate_slippage("MARKET", None, market_data, is_buy=True)
+        sell_fill = simulate_slippage("MARKET", None, market_data, is_buy=False)
 
         print(f"✓ Market Order Slippage:")
         print(f"  Market: Bid={market_data['bid']}, Ask={market_data['ask']}")
         print(f"  Buy fill: {buy_fill:.4f}")
         print(f"  Sell fill: {sell_fill:.4f}")
 
-        buy_slippage = (buy_fill - market_data['ask']) / market_data['ask']
-        sell_slippage = (market_data['bid'] - sell_fill) / market_data['bid']
+        buy_slippage = (buy_fill - market_data["ask"]) / market_data["ask"]
+        sell_slippage = (market_data["bid"] - sell_fill) / market_data["bid"]
 
         print(f"  Buy slippage: {buy_slippage:.2%}")
         print(f"  Sell slippage: {sell_slippage:.2%}")
 
-        assert buy_fill >= market_data['ask'], "Buy should fill at or above ask"
-        assert sell_fill <= market_data['bid'], "Sell should fill at or below bid"
+        assert buy_fill >= market_data["ask"], "Buy should fill at or above ask"
+        assert sell_fill <= market_data["bid"], "Sell should fill at or below bid"
 
         print(f"\n  ✓ PASS: Slippage simulation working")
 
     def test_total_transaction_cost(self):
         """Test total transaction cost calculation"""
-        print("\n" + "="*70)
+        print("\n" + "=" * 70)
         print("TEST: Total Transaction Cost")
-        print("="*70)
+        print("=" * 70)
 
         def calculate_total_cost(order_size, price, spread, market_impact, commission=0.001):
             """Calculate total transaction cost"""
@@ -273,11 +265,11 @@ class TestTransactionCost:
             total = spread_cost + impact_cost + commission_cost
 
             return {
-                'spread': spread_cost,
-                'impact': impact_cost,
-                'commission': commission_cost,
-                'total': total,
-                'total_bps': (total / (order_size * price)) * 10000
+                "spread": spread_cost,
+                "impact": impact_cost,
+                "commission": commission_cost,
+                "total": total,
+                "total_bps": (total / (order_size * price)) * 10000,
             }
 
         # Test scenario
@@ -297,8 +289,8 @@ class TestTransactionCost:
         print(f"    Commission: ${costs['commission']:.2f}")
         print(f"\n  Total cost: ${costs['total']:.2f} ({costs['total_bps']:.1f} bps)")
 
-        assert costs['total'] > 0, "Total cost should be positive"
-        assert costs['total_bps'] < 1000, "Cost should be reasonable (<10%)"
+        assert costs["total"] > 0, "Total cost should be positive"
+        assert costs["total_bps"] < 1000, "Cost should be reasonable (<10%)"
 
         print(f"\n  ✓ PASS: Transaction cost calculation correct")
 
@@ -308,19 +300,19 @@ class TestOrderRouter:
 
     def test_order_routing_logic(self):
         """Test order routing to appropriate venue"""
-        print("\n" + "="*70)
+        print("\n" + "=" * 70)
         print("TEST: Order Routing Logic")
-        print("="*70)
+        print("=" * 70)
 
         def route_order(order, venues):
             """Simple routing logic: Route to best available venue"""
 
             best_venue = None
-            best_score = -float('inf')
+            best_score = -float("inf")
 
             for venue in venues:
                 # Score based on liquidity and costs
-                score = venue['liquidity'] - venue['cost']
+                score = venue["liquidity"] - venue["cost"]
 
                 if score > best_score:
                     best_score = score
@@ -330,12 +322,12 @@ class TestOrderRouter:
 
         # Test venues
         venues = [
-            {'name': 'Kalshi', 'liquidity': 100, 'cost': 0.01},
-            {'name': 'Polymarket', 'liquidity': 200, 'cost': 0.02},
-            {'name': 'Venue C', 'liquidity': 50, 'cost': 0.005}
+            {"name": "Kalshi", "liquidity": 100, "cost": 0.01},
+            {"name": "Polymarket", "liquidity": 200, "cost": 0.02},
+            {"name": "Venue C", "liquidity": 50, "cost": 0.005},
         ]
 
-        order = {'ticker': 'NFL_CHI_GB', 'quantity': 100, 'side': 'BUY'}
+        order = {"ticker": "NFL_CHI_GB", "quantity": 100, "side": "BUY"}
 
         selected = route_order(order, venues)
 
@@ -356,20 +348,20 @@ class TestSignalGenerator:
 
     def test_signal_filtering(self):
         """Test signal filtering by confidence"""
-        print("\n" + "="*70)
+        print("\n" + "=" * 70)
         print("TEST: Signal Filtering")
-        print("="*70)
+        print("=" * 70)
 
         def filter_signals(signals, min_confidence=0.6):
             """Filter signals by confidence threshold"""
-            return [s for s in signals if s['confidence'] >= min_confidence]
+            return [s for s in signals if s["confidence"] >= min_confidence]
 
         # Test signals
         signals = [
-            {'action': 'BUY', 'confidence': 0.8, 'quantity': 100},
-            {'action': 'SELL', 'confidence': 0.4, 'quantity': 50},
-            {'action': 'BUY', 'confidence': 0.9, 'quantity': 200},
-            {'action': 'HOLD', 'confidence': 0.5, 'quantity': 0}
+            {"action": "BUY", "confidence": 0.8, "quantity": 100},
+            {"action": "SELL", "confidence": 0.4, "quantity": 50},
+            {"action": "BUY", "confidence": 0.9, "quantity": 200},
+            {"action": "HOLD", "confidence": 0.5, "quantity": 0},
         ]
 
         min_conf = 0.6
@@ -383,29 +375,25 @@ class TestSignalGenerator:
             print(f"    {sig['action']}: Confidence={sig['confidence']}, Qty={sig['quantity']}")
 
         assert len(filtered) == 2, "Should filter to 2 high-confidence signals"
-        assert all(s['confidence'] >= min_conf for s in filtered)
+        assert all(s["confidence"] >= min_conf for s in filtered)
 
         print(f"\n  ✓ PASS: Signal filtering working")
 
     def test_signal_latency_adjustment(self):
         """Test latency adjustment for signals"""
-        print("\n" + "="*70)
+        print("\n" + "=" * 70)
         print("TEST: Latency Adjustment")
-        print("="*70)
+        print("=" * 70)
 
         def adjust_for_latency(signal, latency_ms, decay_rate=0.001):
             """Adjust signal confidence for latency"""
             # Confidence decays with latency
             decay_factor = np.exp(-decay_rate * latency_ms)
-            adjusted_confidence = signal['confidence'] * decay_factor
+            adjusted_confidence = signal["confidence"] * decay_factor
 
-            return {
-                **signal,
-                'confidence': adjusted_confidence,
-                'latency_adjusted': True
-            }
+            return {**signal, "confidence": adjusted_confidence, "latency_adjusted": True}
 
-        signal = {'action': 'BUY', 'confidence': 0.9, 'quantity': 100}
+        signal = {"action": "BUY", "confidence": 0.9, "quantity": 100}
 
         # Test with different latencies
         latencies = [10, 50, 100, 500]  # milliseconds
@@ -418,23 +406,18 @@ class TestSignalGenerator:
             adjusted = adjust_for_latency(signal, latency)
             print(f"  {latency}ms: {adjusted['confidence']:.2%}")
 
-        assert adjusted['latency_adjusted'], "Should mark as latency adjusted"
+        assert adjusted["latency_adjusted"], "Should mark as latency adjusted"
         print(f"\n  ✓ PASS: Latency adjustment working")
 
 
 def run_all_phase7_validations():
     """Run all Phase 7 validation tests"""
 
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print("PHASE 7 VALIDATION: EXECUTION SYSTEM & RISK MANAGEMENT")
-    print("="*70)
+    print("=" * 70)
 
-    result = pytest.main([
-        __file__,
-        '-v',
-        '--tb=short',
-        '-s'
-    ])
+    result = pytest.main([__file__, "-v", "--tb=short", "-s"])
 
     return result
 

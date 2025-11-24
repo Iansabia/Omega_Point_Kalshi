@@ -2,10 +2,10 @@
 Trading strategies for backtesting.
 """
 
+import logging
 from abc import ABC, abstractmethod
 from datetime import datetime
 from typing import Optional
-import logging
 
 from .backtest_engine import Event, MarketEvent, SignalEvent
 
@@ -46,12 +46,7 @@ class BuyAndHoldStrategy(Strategy):
         if isinstance(event, MarketEvent):
             for symbol in self.symbol_list:
                 if not self.bought[symbol]:
-                    signal = SignalEvent(
-                        timestamp=event.timestamp,
-                        symbol=symbol,
-                        signal_type='LONG',
-                        strength=1.0
-                    )
+                    signal = SignalEvent(timestamp=event.timestamp, symbol=symbol, signal_type="LONG", strength=1.0)
                     self.events.put(signal)
                     self.bought[symbol] = True
 
@@ -76,31 +71,21 @@ class MovingAverageCrossStrategy(Strategy):
                 bars = self.data_handler.get_latest_bars(symbol, N=self.long_window)
 
                 if bars is not None and len(bars) >= self.long_window:
-                    closes = bars['close'].values
-                    short_ma = closes[-self.short_window:].mean()
+                    closes = bars["close"].values
+                    short_ma = closes[-self.short_window :].mean()
                     long_ma = closes.mean()
 
                     current_position = self.positions[symbol]
 
                     # Bullish crossover
                     if short_ma > long_ma and current_position == 0:
-                        signal = SignalEvent(
-                            timestamp=event.timestamp,
-                            symbol=symbol,
-                            signal_type='LONG',
-                            strength=1.0
-                        )
+                        signal = SignalEvent(timestamp=event.timestamp, symbol=symbol, signal_type="LONG", strength=1.0)
                         self.events.put(signal)
                         self.positions[symbol] = 1
 
                     # Bearish crossover
                     elif short_ma < long_ma and current_position == 1:
-                        signal = SignalEvent(
-                            timestamp=event.timestamp,
-                            symbol=symbol,
-                            signal_type='EXIT',
-                            strength=1.0
-                        )
+                        signal = SignalEvent(timestamp=event.timestamp, symbol=symbol, signal_type="EXIT", strength=1.0)
                         self.events.put(signal)
                         self.positions[symbol] = 0
 
@@ -125,7 +110,7 @@ class MeanReversionStrategy(Strategy):
                 bars = self.data_handler.get_latest_bars(symbol, N=self.lookback)
 
                 if bars is not None and len(bars) >= self.lookback:
-                    closes = bars['close'].values if 'close' in bars.columns else bars['price'].values
+                    closes = bars["close"].values if "close" in bars.columns else bars["price"].values
                     mean_price = closes.mean()
                     current_price = closes[-1]
 
@@ -137,9 +122,9 @@ class MeanReversionStrategy(Strategy):
                         signal = SignalEvent(
                             timestamp=event.timestamp,
                             symbol=symbol,
-                            signal_type='LONG',
+                            signal_type="LONG",
                             strength=abs(deviation),
-                            target_price=current_price
+                            target_price=current_price,
                         )
                         self.events.put(signal)
                         self.positions[symbol] = 1
@@ -147,10 +132,7 @@ class MeanReversionStrategy(Strategy):
                     # Price above mean -> SELL/EXIT (expecting reversion down)
                     elif deviation > self.entry_threshold and current_position == 1:
                         signal = SignalEvent(
-                            timestamp=event.timestamp,
-                            symbol=symbol,
-                            signal_type='EXIT',
-                            strength=abs(deviation)
+                            timestamp=event.timestamp, symbol=symbol, signal_type="EXIT", strength=abs(deviation)
                         )
                         self.events.put(signal)
                         self.positions[symbol] = 0
@@ -179,14 +161,14 @@ class ABMDrivenStrategy(Strategy):
                 forecast = self._get_abm_forecast(symbol)
 
                 if forecast is not None:
-                    current_price = self.data_handler.get_latest_bar_value(symbol, 'close')
+                    current_price = self.data_handler.get_latest_bar_value(symbol, "close")
 
                     if current_price is None:
                         continue
 
                     # Calculate expected return
-                    expected_return = (forecast['price'] - current_price) / current_price
-                    confidence = forecast.get('confidence', 0.5)
+                    expected_return = (forecast["price"] - current_price) / current_price
+                    confidence = forecast.get("confidence", 0.5)
 
                     current_position = self.positions[symbol]
 
@@ -195,9 +177,9 @@ class ABMDrivenStrategy(Strategy):
                         signal = SignalEvent(
                             timestamp=event.timestamp,
                             symbol=symbol,
-                            signal_type='LONG',
+                            signal_type="LONG",
                             strength=confidence,
-                            target_price=forecast['price']
+                            target_price=forecast["price"],
                         )
                         self.events.put(signal)
                         self.positions[symbol] = 1
@@ -205,10 +187,7 @@ class ABMDrivenStrategy(Strategy):
                     # Exit if forecast drops or confidence wanes
                     elif (expected_return < -0.01 or confidence < 0.4) and current_position == 1:
                         signal = SignalEvent(
-                            timestamp=event.timestamp,
-                            symbol=symbol,
-                            signal_type='EXIT',
-                            strength=1.0 - confidence
+                            timestamp=event.timestamp, symbol=symbol, signal_type="EXIT", strength=1.0 - confidence
                         )
                         self.events.put(signal)
                         self.positions[symbol] = 0
@@ -220,8 +199,5 @@ class ABMDrivenStrategy(Strategy):
         This is a placeholder - would integrate with actual ABM.
         """
         if self.abm_model:
-            return {
-                'price': self.abm_model.current_price,
-                'confidence': 0.7
-            }
+            return {"price": self.abm_model.current_price, "confidence": 0.7}
         return None

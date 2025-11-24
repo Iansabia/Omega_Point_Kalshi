@@ -8,24 +8,25 @@ Tests multiple components working together:
 4. Feature engineering pipeline (data → features → agents)
 """
 
-import pytest
-import numpy as np
-import pandas as pd
 import sys
 from pathlib import Path
+
+import numpy as np
+import pandas as pd
+import pytest
 
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from src.models.market_model import PredictionMarketModel
-from src.agents.noise_trader import NoiseTrader
 from src.agents.informed_trader import InformedTrader
 from src.agents.market_maker_agent import MarketMakerAgent
-from src.orderbook.orderbook import OrderBook
-from src.orderbook.matching_engine import MatchingEngine
-from src.risk.risk_manager import RiskManager, RiskLimits
-from src.data.feature_engineering import FeatureEngineer
+from src.agents.noise_trader import NoiseTrader
 from src.backtesting.backtest_engine import BacktestEngine
+from src.data.feature_engineering import FeatureEngineer
+from src.models.market_model import PredictionMarketModel
+from src.orderbook.matching_engine import MatchingEngine
+from src.orderbook.orderbook import OrderBook
+from src.risk.risk_manager import RiskLimits, RiskManager
 
 
 @pytest.mark.integration
@@ -34,21 +35,12 @@ class TestEndToEndSimulation:
 
     def test_simple_market_simulation(self):
         """Test basic market simulation with multiple agents."""
-        print("\n" + "="*70)
+        print("\n" + "=" * 70)
         print("INTEGRATION TEST: Simple Market Simulation")
-        print("="*70)
+        print("=" * 70)
 
         # Create model with proper config structure
-        config = {
-            'market': {
-                'initial_price': 0.50,
-                'ticker': 'TEST'
-            },
-            'agents': {
-                'noise_traders': 3,
-                'informed_traders': 2
-            }
-        }
+        config = {"market": {"initial_price": 0.50, "ticker": "TEST"}, "agents": {"noise_traders": 3, "informed_traders": 2}}
 
         model = PredictionMarketModel(config=config, seed=42)
 
@@ -76,19 +68,12 @@ class TestEndToEndSimulation:
 
     def test_agent_interactions(self):
         """Test that different agent types interact correctly."""
-        print("\n" + "="*70)
+        print("\n" + "=" * 70)
         print("INTEGRATION TEST: Agent Interactions")
-        print("="*70)
+        print("=" * 70)
 
         # Create minimal model
-        config = {
-            'market': {'initial_price': 0.50},
-            'agents': {
-                'noise_traders': 2,
-                'informed_traders': 2,
-                'market_makers': 2
-            }
-        }
+        config = {"market": {"initial_price": 0.50}, "agents": {"noise_traders": 2, "informed_traders": 2, "market_makers": 2}}
 
         model = PredictionMarketModel(config=config, seed=42)
 
@@ -105,14 +90,11 @@ class TestEndToEndSimulation:
 
     def test_price_discovery(self):
         """Test that market simulation produces valid prices."""
-        print("\n" + "="*70)
+        print("\n" + "=" * 70)
         print("INTEGRATION TEST: Price Validity")
-        print("="*70)
+        print("=" * 70)
 
-        config = {
-            'market': {'initial_price': 0.30},
-            'agents': {'noise_traders': 5, 'informed_traders': 3}
-        }
+        config = {"market": {"initial_price": 0.30}, "agents": {"noise_traders": 5, "informed_traders": 3}}
 
         model = PredictionMarketModel(config=config, seed=42)
 
@@ -136,9 +118,9 @@ class TestBacktestingWorkflow:
     @pytest.mark.skip(reason="BacktestEngine API needs to be standardized")
     def test_backtest_engine_integration(self):
         """Test backtesting engine with synthetic data."""
-        print("\n" + "="*70)
+        print("\n" + "=" * 70)
         print("INTEGRATION TEST: Backtesting Workflow")
-        print("="*70)
+        print("=" * 70)
 
         # TODO: Update this test once BacktestEngine API is standardized
         # The backtest engine currently has different initialization parameters
@@ -151,15 +133,13 @@ class TestRiskManagementIntegration:
 
     def test_risk_limits_enforced_in_simulation(self):
         """Test that risk limits are enforced during simulation."""
-        print("\n" + "="*70)
+        print("\n" + "=" * 70)
         print("INTEGRATION TEST: Risk Management Integration")
-        print("="*70)
+        print("=" * 70)
 
         # Create tight risk limits
         risk_limits = RiskLimits(
-            max_positions=2,
-            max_position_size=50,
-            trade_probability=1.0  # Always allow trades (for testing)
+            max_positions=2, max_position_size=50, trade_probability=1.0  # Always allow trades (for testing)
         )
 
         print(f"✓ Risk limits:")
@@ -176,12 +156,7 @@ class TestRiskManagementIntegration:
         model.order_book.get_mid_price = Mock(return_value=0.50)
         model.matching_engine = Mock()
 
-        agent = NoiseTrader(
-            model=model,
-            strategy="random",
-            initial_wealth=1000.0,
-            risk_limits=risk_limits
-        )
+        agent = NoiseTrader(model=model, strategy="random", initial_wealth=1000.0, risk_limits=risk_limits)
 
         # Override trade probability to ensure order generation
         agent.trade_probability = 1.0
@@ -209,29 +184,26 @@ class TestRiskManagementIntegration:
 
     def test_position_limits(self):
         """Test that position limits work across multiple agents."""
-        print("\n" + "="*70)
+        print("\n" + "=" * 70)
         print("INTEGRATION TEST: Position Limit Enforcement")
-        print("="*70)
+        print("=" * 70)
 
-        risk_limits = RiskLimits(
-            max_positions=3,
-            trade_probability=1.0
-        )
+        risk_limits = RiskLimits(max_positions=3, trade_probability=1.0)
 
         risk_manager = RiskManager(limits=risk_limits)
 
         # Add positions
-        risk_manager.positions = {'GAME1': 100, 'GAME2': 200}
+        risk_manager.positions = {"GAME1": 100, "GAME2": 200}
 
         # Try to add 3rd position (should work)
-        can_trade_1, reason_1 = risk_manager.can_trade('GAME3', edge=0.10)
+        can_trade_1, reason_1 = risk_manager.can_trade("GAME3", edge=0.10)
         print(f"✓ Adding 3rd position: {can_trade_1} ({reason_1})")
 
         if can_trade_1:
-            risk_manager.positions['GAME3'] = 150
+            risk_manager.positions["GAME3"] = 150
 
         # Try to add 4th position (should fail)
-        can_trade_2, reason_2 = risk_manager.can_trade('GAME4', edge=0.10)
+        can_trade_2, reason_2 = risk_manager.can_trade("GAME4", edge=0.10)
         print(f"✓ Adding 4th position: {can_trade_2} ({reason_2})")
 
         assert can_trade_1 == True, "3rd position should be allowed"
@@ -250,18 +222,18 @@ class TestDataPipelineIntegration:
 
     def test_feature_engineering_workflow(self):
         """Test feature engineering with game data."""
-        print("\n" + "="*70)
+        print("\n" + "=" * 70)
         print("INTEGRATION TEST: Feature Engineering Pipeline")
-        print("="*70)
+        print("=" * 70)
 
         fe = FeatureEngineer()
 
         # Simulate season results
         games = [
-            ('CHI', 'GB', 24, 21),
-            ('CHI', 'DET', 28, 14),
-            ('GB', 'DET', 31, 17),
-            ('CHI', 'GB', 17, 24),  # Rematch
+            ("CHI", "GB", 24, 21),
+            ("CHI", "DET", 28, 14),
+            ("GB", "DET", 31, 17),
+            ("CHI", "GB", 17, 24),  # Rematch
         ]
 
         print(f"✓ Processing {len(games)} games:")
@@ -275,7 +247,7 @@ class TestDataPipelineIntegration:
             print(f"  {team}: {fe.team_elos[team]:.1f}")
 
         # Create features for next game
-        next_game = {'home_team': 'CHI', 'away_team': 'DET'}
+        next_game = {"home_team": "CHI", "away_team": "DET"}
         features = fe.process_game_features(next_game)
 
         print(f"\n✓ Features for CHI vs DET:")
@@ -283,17 +255,17 @@ class TestDataPipelineIntegration:
         print(f"  Away ELO: {features['away_elo']:.1f}")
         print(f"  ELO diff: {features['elo_diff']:.1f}")
 
-        assert 'home_elo' in features
-        assert 'away_elo' in features
-        assert 'elo_diff' in features
+        assert "home_elo" in features
+        assert "away_elo" in features
+        assert "elo_diff" in features
 
         print(f"\n  ✅ PASS: Feature engineering pipeline works")
 
     def test_volatility_calculation_pipeline(self):
         """Test volatility calculation from price history."""
-        print("\n" + "="*70)
+        print("\n" + "=" * 70)
         print("INTEGRATION TEST: Volatility Calculation")
-        print("="*70)
+        print("=" * 70)
 
         fe = FeatureEngineer()
 
@@ -313,17 +285,11 @@ class TestDataPipelineIntegration:
 
 def run_integration_tests():
     """Run all integration tests."""
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print("OMEGA POINT ABM - INTEGRATION TEST SUITE")
-    print("="*70)
+    print("=" * 70)
 
-    result = pytest.main([
-        __file__,
-        '-v',
-        '--tb=short',
-        '-s',
-        '-m', 'integration'
-    ])
+    result = pytest.main([__file__, "-v", "--tb=short", "-s", "-m", "integration"])
 
     return result
 

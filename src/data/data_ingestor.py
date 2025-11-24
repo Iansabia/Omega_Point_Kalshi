@@ -1,6 +1,6 @@
-import time
-from typing import Dict, Any
 import logging
+import time
+from typing import Any, Dict
 
 # Placeholder for influxdb_client
 try:
@@ -13,17 +13,20 @@ except ImportError:
 
 logger = logging.getLogger(__name__)
 
+
 class DataIngestor:
     """
     Ingests market tick data into Time-Series Database (InfluxDB/QuestDB).
     """
-    
-    def __init__(self, url: str = "http://localhost:8086", token: str = "my-token", org: str = "my-org", bucket: str = "trading"):
+
+    def __init__(
+        self, url: str = "http://localhost:8086", token: str = "my-token", org: str = "my-org", bucket: str = "trading"
+    ):
         self.client = None
         self.write_api = None
         self.bucket = bucket
         self.org = org
-        
+
         if InfluxDBClient:
             try:
                 self.client = InfluxDBClient(url=url, token=token, org=org)
@@ -38,21 +41,23 @@ class DataIngestor:
         """
         if not self.write_api:
             return
-            
+
         try:
-            point = Point("nfl_ticks") \
-                .tag("game_id", game_id) \
-                .field("price", float(price)) \
-                .field("volume", float(volume)) \
+            point = (
+                Point("nfl_ticks")
+                .tag("game_id", game_id)
+                .field("price", float(price))
+                .field("volume", float(volume))
                 .time(time.time_ns())
-                
+            )
+
             # Add feature fields
             for k, v in features.items():
                 if isinstance(v, (int, float)):
                     point.field(k, float(v))
-                    
+
             self.write_api.write(bucket=self.bucket, org=self.org, record=point)
-            
+
         except Exception as e:
             logger.error(f"Failed to write tick: {e}")
 

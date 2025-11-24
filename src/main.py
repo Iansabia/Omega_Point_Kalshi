@@ -1,10 +1,11 @@
-import os
-import logging
-import yaml
 import argparse
-import pandas as pd
+import logging
+import os
 from pathlib import Path
-from typing import Dict, Any
+from typing import Any, Dict
+
+import pandas as pd
+import yaml
 
 # Import the market model
 from src.models.market_model import PredictionMarketModel
@@ -12,13 +13,11 @@ from src.models.market_model import PredictionMarketModel
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler('simulation.log'),
-        logging.StreamHandler()
-    ]
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    handlers=[logging.FileHandler("simulation.log"), logging.StreamHandler()],
 )
 logger = logging.getLogger(__name__)
+
 
 def load_config(config_dir: str = "config") -> Dict[str, Any]:
     """Load configuration files."""
@@ -32,12 +31,13 @@ def load_config(config_dir: str = "config") -> Dict[str, Any]:
             with open(path, "r") as file:
                 loaded = yaml.safe_load(file)
                 if loaded:  # Check if file is not empty
-                    config[path.stem.replace('_config', '')] = loaded
+                    config[path.stem.replace("_config", "")] = loaded
                     logger.info(f"Loaded config: {f}")
         else:
             logger.warning(f"Config file not found: {f}")
 
     return config
+
 
 def run_simulation(model: PredictionMarketModel, steps: int, verbose: bool = False):
     """
@@ -54,11 +54,14 @@ def run_simulation(model: PredictionMarketModel, steps: int, verbose: bool = Fal
         model.step()
 
         if verbose and (i + 1) % 100 == 0:
-            logger.info(f"Step {i + 1}/{steps} - Price: {model.current_price:.4f}, "
-                       f"Spread: {model.get_spread():.4f}, "
-                       f"Volume: {model.calculate_volume():.2f}")
+            logger.info(
+                f"Step {i + 1}/{steps} - Price: {model.current_price:.4f}, "
+                f"Spread: {model.get_spread():.4f}, "
+                f"Volume: {model.calculate_volume():.2f}"
+            )
 
     logger.info(f"Simulation complete after {steps} steps")
+
 
 def save_results(model: PredictionMarketModel, output_dir: str = "results"):
     """
@@ -90,7 +93,7 @@ def save_results(model: PredictionMarketModel, output_dir: str = "results"):
         "total_trades": len(model.matching_engine.trades),
         "final_spread": model.get_spread(),
         "llm_cost": model.cumulative_llm_cost,
-        "num_agents": len(list(model.agents))
+        "num_agents": len(list(model.agents)),
     }
 
     with open(output_path / "summary.yaml", "w") as f:
@@ -105,6 +108,7 @@ def save_results(model: PredictionMarketModel, output_dir: str = "results"):
         logger.info(f"{key}: {value}")
     logger.info("=" * 60)
 
+
 def print_agent_summary(model: PredictionMarketModel):
     """Print summary of agent performance."""
     logger.info("=" * 60)
@@ -115,23 +119,17 @@ def print_agent_summary(model: PredictionMarketModel):
     for agent in model.agents:
         agent_type = agent.__class__.__name__
         if agent_type not in agent_stats:
-            agent_stats[agent_type] = {
-                'count': 0,
-                'total_wealth': 0,
-                'total_position': 0,
-                'total_trades': 0,
-                'total_pnl': 0
-            }
+            agent_stats[agent_type] = {"count": 0, "total_wealth": 0, "total_position": 0, "total_trades": 0, "total_pnl": 0}
 
         stats = agent_stats[agent_type]
-        stats['count'] += 1
-        stats['total_wealth'] += agent.wealth
-        stats['total_position'] += agent.position
-        stats['total_trades'] += len(agent.trade_history)
-        stats['total_pnl'] += agent.calculate_pnl(model.current_price)
+        stats["count"] += 1
+        stats["total_wealth"] += agent.wealth
+        stats["total_position"] += agent.position
+        stats["total_trades"] += len(agent.trade_history)
+        stats["total_pnl"] += agent.calculate_pnl(model.current_price)
 
     for agent_type, stats in agent_stats.items():
-        count = stats['count']
+        count = stats["count"]
         logger.info(f"\n{agent_type} (n={count}):")
         logger.info(f"  Avg Wealth: ${stats['total_wealth']/count:.2f}")
         logger.info(f"  Avg Position: {stats['total_position']/count:.2f}")
@@ -139,6 +137,7 @@ def print_agent_summary(model: PredictionMarketModel):
         logger.info(f"  Avg PnL: ${stats['total_pnl']/count:.2f}")
 
     logger.info("=" * 60)
+
 
 def main():
     """Main entry point for the Prediction Market ABM."""
@@ -160,21 +159,17 @@ def main():
     logger.info(f"Configuration loaded: {list(config.keys())}")
 
     # Override with command-line arguments
-    if 'base' not in config:
-        config['base'] = {}
-    if 'simulation' not in config['base']:
-        config['base']['simulation'] = {}
+    if "base" not in config:
+        config["base"] = {}
+    if "simulation" not in config["base"]:
+        config["base"]["simulation"] = {}
 
-    config['base']['simulation']['seed'] = args.seed
-    config['base']['simulation']['steps'] = args.steps
+    config["base"]["simulation"]["seed"] = args.seed
+    config["base"]["simulation"]["steps"] = args.steps
 
     # Initialize Market Model
     logger.info(f"Initializing market model with seed={args.seed}...")
-    model = PredictionMarketModel(
-        config=config.get('base', {}),
-        agent_config=config.get('agent_profiles', {}),
-        seed=args.seed
-    )
+    model = PredictionMarketModel(config=config.get("base", {}), agent_config=config.get("agent_profiles", {}), seed=args.seed)
 
     logger.info(f"Model initialized with {len(list(model.agents))} agents")
 
@@ -193,6 +188,7 @@ def main():
     except Exception as e:
         logger.error(f"Simulation failed with error: {e}", exc_info=True)
         raise
+
 
 if __name__ == "__main__":
     main()

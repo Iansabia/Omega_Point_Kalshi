@@ -12,16 +12,18 @@ States:
 - OPEN: Failure threshold exceeded, requests fail fast
 - HALF_OPEN: Testing if service recovered, limited requests allowed
 """
-import time
-from typing import Callable, Any, Optional, Dict
-from enum import Enum
-from dataclasses import dataclass, field
-from functools import wraps
+
 import threading
+import time
+from dataclasses import dataclass, field
+from enum import Enum
+from functools import wraps
+from typing import Any, Callable, Dict, Optional
 
 
 class CircuitState(Enum):
     """Circuit breaker states."""
+
     CLOSED = "closed"
     OPEN = "open"
     HALF_OPEN = "half_open"
@@ -30,6 +32,7 @@ class CircuitState(Enum):
 @dataclass
 class CircuitBreakerConfig:
     """Circuit breaker configuration."""
+
     failure_threshold: int = 5  # Number of failures before opening
     recovery_timeout: float = 60.0  # Seconds to wait before half-open
     expected_exception: type = Exception  # Exception type to catch
@@ -40,6 +43,7 @@ class CircuitBreakerConfig:
 @dataclass
 class CircuitBreakerStats:
     """Circuit breaker statistics."""
+
     total_calls: int = 0
     successful_calls: int = 0
     failed_calls: int = 0
@@ -73,7 +77,7 @@ class CircuitBreaker:
         success_threshold: int = 2,
         timeout: float = 30.0,
         expected_exception: type = Exception,
-        fallback: Optional[Callable] = None
+        fallback: Optional[Callable] = None,
     ):
         """Initialize circuit breaker."""
         self.name = name
@@ -82,7 +86,7 @@ class CircuitBreaker:
             recovery_timeout=recovery_timeout,
             expected_exception=expected_exception,
             success_threshold=success_threshold,
-            timeout=timeout
+            timeout=timeout,
         )
         self.fallback = fallback
 
@@ -95,9 +99,11 @@ class CircuitBreaker:
 
     def __call__(self, func: Callable) -> Callable:
         """Decorator to wrap function with circuit breaker."""
+
         @wraps(func)
         def wrapper(*args, **kwargs):
             return self.call(func, *args, **kwargs)
+
         return wrapper
 
     def call(self, func: Callable, *args, **kwargs) -> Any:
@@ -111,8 +117,7 @@ class CircuitBreaker:
                     self._transition_to_half_open()
                 else:
                     raise CircuitBreakerOpenError(
-                        f"Circuit breaker '{self.name}' is OPEN. "
-                        f"Retry in {self._time_until_retry():.0f}s"
+                        f"Circuit breaker '{self.name}' is OPEN. " f"Retry in {self._time_until_retry():.0f}s"
                     )
 
             # Try the call
@@ -216,22 +221,19 @@ class CircuitBreaker:
             "total_calls": self.stats.total_calls,
             "successful_calls": self.stats.successful_calls,
             "failed_calls": self.stats.failed_calls,
-            "success_rate": (
-                self.stats.successful_calls / self.stats.total_calls
-                if self.stats.total_calls > 0 else 0
-            ),
+            "success_rate": (self.stats.successful_calls / self.stats.total_calls if self.stats.total_calls > 0 else 0),
             "consecutive_failures": self.stats.consecutive_failures,
             "consecutive_successes": self.stats.consecutive_successes,
             "state_changes": self.stats.state_changes,
             "time_since_last_failure": (
-                time.time() - self.stats.last_failure_time
-                if self.stats.last_failure_time > 0 else None
-            )
+                time.time() - self.stats.last_failure_time if self.stats.last_failure_time > 0 else None
+            ),
         }
 
 
 class CircuitBreakerOpenError(Exception):
     """Raised when circuit breaker is open."""
+
     pass
 
 
@@ -254,10 +256,7 @@ class CircuitBreakerRegistry:
 
     def get_all_stats(self) -> Dict[str, Dict[str, Any]]:
         """Get statistics for all circuit breakers."""
-        return {
-            name: breaker.get_stats()
-            for name, breaker in self._breakers.items()
-        }
+        return {name: breaker.get_stats() for name, breaker in self._breakers.items()}
 
     def reset_all(self):
         """Reset all circuit breakers."""
@@ -271,40 +270,20 @@ registry = CircuitBreakerRegistry()
 
 
 # Pre-configured circuit breakers for common APIs
-kalshi_breaker = CircuitBreaker(
-    name="kalshi_api",
-    failure_threshold=5,
-    recovery_timeout=60,
-    success_threshold=2,
-    timeout=30
-)
+kalshi_breaker = CircuitBreaker(name="kalshi_api", failure_threshold=5, recovery_timeout=60, success_threshold=2, timeout=30)
 registry.register(kalshi_breaker)
 
 polymarket_breaker = CircuitBreaker(
-    name="polymarket_api",
-    failure_threshold=5,
-    recovery_timeout=60,
-    success_threshold=2,
-    timeout=30
+    name="polymarket_api", failure_threshold=5, recovery_timeout=60, success_threshold=2, timeout=30
 )
 registry.register(polymarket_breaker)
 
 sportradar_breaker = CircuitBreaker(
-    name="sportradar_api",
-    failure_threshold=3,
-    recovery_timeout=120,
-    success_threshold=2,
-    timeout=60
+    name="sportradar_api", failure_threshold=3, recovery_timeout=120, success_threshold=2, timeout=60
 )
 registry.register(sportradar_breaker)
 
-gemini_breaker = CircuitBreaker(
-    name="gemini_api",
-    failure_threshold=10,
-    recovery_timeout=30,
-    success_threshold=3,
-    timeout=10
-)
+gemini_breaker = CircuitBreaker(name="gemini_api", failure_threshold=10, recovery_timeout=30, success_threshold=3, timeout=10)
 registry.register(gemini_breaker)
 
 
@@ -313,13 +292,14 @@ def log_circuit_state_change(name: str, new_state: CircuitState, stats: CircuitB
     """Log circuit breaker state changes."""
     try:
         from ..visualization.monitoring import log
+
         log.warning(
             "circuit_breaker_state_change",
             breaker=name,
             new_state=new_state.value,
             consecutive_failures=stats.consecutive_failures,
             total_calls=stats.total_calls,
-            failed_calls=stats.failed_calls
+            failed_calls=stats.failed_calls,
         )
     except ImportError:
         print(f"Circuit breaker '{name}' transitioned to {new_state.value}")
@@ -332,12 +312,12 @@ for breaker in [kalshi_breaker, polymarket_breaker, sportradar_breaker, gemini_b
 
 # Export public API
 __all__ = [
-    'CircuitBreaker',
-    'CircuitBreakerOpenError',
-    'CircuitState',
-    'registry',
-    'kalshi_breaker',
-    'polymarket_breaker',
-    'sportradar_breaker',
-    'gemini_breaker'
+    "CircuitBreaker",
+    "CircuitBreakerOpenError",
+    "CircuitState",
+    "registry",
+    "kalshi_breaker",
+    "polymarket_breaker",
+    "sportradar_breaker",
+    "gemini_breaker",
 ]

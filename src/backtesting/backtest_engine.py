@@ -1,52 +1,61 @@
 import queue
 import time
 from abc import ABC, abstractmethod
-from typing import List, Dict, Any, Optional
 from dataclasses import dataclass
 from datetime import datetime
+from typing import Any, Dict, List, Optional
 
 # --- Events ---
 
+
 class Event(ABC):
     pass
+
 
 @dataclass
 class MarketEvent(Event):
     """
     Triggered when new market data is available.
     """
+
     timestamp: datetime
     symbol: str
-    data: Dict[str, Any] # OHLCV, etc.
+    data: Dict[str, Any]  # OHLCV, etc.
+
 
 @dataclass
 class SignalEvent(Event):
     """
     Triggered by a Strategy/Agent generating a trading signal.
     """
+
     timestamp: datetime
     symbol: str
-    signal_type: str # 'LONG', 'SHORT', 'EXIT'
+    signal_type: str  # 'LONG', 'SHORT', 'EXIT'
     strength: float
     target_price: Optional[float] = None
+
 
 @dataclass
 class OrderEvent(Event):
     """
     Triggered when a Signal is converted to an Order.
     """
+
     timestamp: datetime
     symbol: str
-    order_type: str # 'MKT', 'LMT'
+    order_type: str  # 'MKT', 'LMT'
     quantity: int
-    direction: str # 'BUY', 'SELL'
+    direction: str  # 'BUY', 'SELL'
     price: Optional[float] = None
+
 
 @dataclass
 class FillEvent(Event):
     """
     Triggered when an Order is filled by the ExecutionHandler.
     """
+
     timestamp: datetime
     symbol: str
     exchange: str
@@ -54,21 +63,23 @@ class FillEvent(Event):
     direction: str
     fill_price: float
     commission: float
-    cost: float # Total cost (price * qty + comm)
+    cost: float  # Total cost (price * qty + comm)
+
 
 # --- Engine ---
+
 
 class BacktestEngine:
     """
     Event-driven backtesting engine.
     """
-    
+
     def __init__(self, start_date: datetime, end_date: datetime):
         self.events = queue.Queue()
         self.start_date = start_date
         self.end_date = end_date
         self.continue_backtest = True
-        
+
         # Components (to be injected)
         self.data_handler = None
         self.strategy = None
@@ -80,7 +91,7 @@ class BacktestEngine:
         Main event loop.
         """
         print(f"Starting backtest from {self.start_date} to {self.end_date}...")
-        
+
         while self.continue_backtest:
             try:
                 event = self.events.get(False)

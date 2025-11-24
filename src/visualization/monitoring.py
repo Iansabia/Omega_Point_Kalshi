@@ -8,22 +8,25 @@ Features:
 - Performance metrics tracking
 - Error rate monitoring
 """
-import structlog
-import logging
-import time
-from typing import Dict, List, Optional, Callable
-from dataclasses import dataclass, field
-from enum import Enum
-import os
+
 import json
-from datetime import datetime
+import logging
+import os
 import smtplib
-from email.mime.text import MIMEText
+import time
+from dataclasses import dataclass, field
+from datetime import datetime
 from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from enum import Enum
+from typing import Callable, Dict, List, Optional
+
+import structlog
 
 
 class AlertLevel(Enum):
     """Alert severity levels."""
+
     CRITICAL = "critical"
     WARNING = "warning"
     INFO = "info"
@@ -32,6 +35,7 @@ class AlertLevel(Enum):
 @dataclass
 class AlertThreshold:
     """Alert threshold configuration."""
+
     metric: str
     threshold: float
     comparison: str  # 'gt', 'lt', 'eq'
@@ -44,6 +48,7 @@ class AlertThreshold:
 @dataclass
 class Alert:
     """Alert instance."""
+
     level: AlertLevel
     metric: str
     value: float
@@ -72,7 +77,7 @@ class AlertManager:
             threshold=15.0,
             comparison="gt",
             level=AlertLevel.CRITICAL,
-            message_template="CRITICAL: Drawdown exceeded {threshold}%! Current: {value:.2f}%"
+            message_template="CRITICAL: Drawdown exceeded {threshold}%! Current: {value:.2f}%",
         )
 
         self.add_threshold(
@@ -80,7 +85,7 @@ class AlertManager:
             threshold=10.0,
             comparison="gt",
             level=AlertLevel.CRITICAL,
-            message_template="CRITICAL: API errors spiking! {value:.0f} errors/min"
+            message_template="CRITICAL: API errors spiking! {value:.0f} errors/min",
         )
 
         self.add_threshold(
@@ -88,7 +93,7 @@ class AlertManager:
             threshold=1.0,
             comparison="gt",
             level=AlertLevel.CRITICAL,
-            message_template="CRITICAL: Position limit breached! Value: {value:.0f}"
+            message_template="CRITICAL: Position limit breached! Value: {value:.0f}",
         )
 
         # WARNING alerts
@@ -97,7 +102,7 @@ class AlertManager:
             threshold=2.0,
             comparison="gt",
             level=AlertLevel.WARNING,
-            message_template="WARNING: High slippage detected! {value:.2f} bps"
+            message_template="WARNING: High slippage detected! {value:.2f} bps",
         )
 
         self.add_threshold(
@@ -105,7 +110,7 @@ class AlertManager:
             threshold=500.0,
             comparison="gt",
             level=AlertLevel.WARNING,
-            message_template="WARNING: High latency! {value:.0f}ms"
+            message_template="WARNING: High latency! {value:.0f}ms",
         )
 
         self.add_threshold(
@@ -113,7 +118,7 @@ class AlertManager:
             threshold=0.8,
             comparison="lt",
             level=AlertLevel.WARNING,
-            message_template="WARNING: Low fill rate! {value:.2%}"
+            message_template="WARNING: Low fill rate! {value:.2%}",
         )
 
         # INFO alerts
@@ -122,7 +127,7 @@ class AlertManager:
             threshold=10000.0,
             comparison="gt",
             level=AlertLevel.INFO,
-            message_template="INFO: Large trade executed: ${value:.0f}"
+            message_template="INFO: Large trade executed: ${value:.0f}",
         )
 
         self.add_threshold(
@@ -130,7 +135,7 @@ class AlertManager:
             threshold=1.0,
             comparison="eq",
             level=AlertLevel.INFO,
-            message_template="INFO: Market regime change detected"
+            message_template="INFO: Market regime change detected",
         )
 
     def add_threshold(
@@ -140,7 +145,7 @@ class AlertManager:
         comparison: str,
         level: AlertLevel,
         message_template: str,
-        cooldown_seconds: int = 300
+        cooldown_seconds: int = 300,
     ):
         """Add an alert threshold."""
         self.thresholds.append(
@@ -150,7 +155,7 @@ class AlertManager:
                 comparison=comparison,
                 level=level,
                 message_template=message_template,
-                cooldown_seconds=cooldown_seconds
+                cooldown_seconds=cooldown_seconds,
             )
         )
 
@@ -177,17 +182,10 @@ class AlertManager:
 
             if triggered:
                 threshold.last_triggered = current_time
-                message = threshold.message_template.format(
-                    threshold=threshold.threshold,
-                    value=value
-                )
+                message = threshold.message_template.format(threshold=threshold.threshold, value=value)
 
                 alert = Alert(
-                    level=threshold.level,
-                    metric=metric,
-                    value=value,
-                    threshold=threshold.threshold,
-                    message=message
+                    level=threshold.level, metric=metric, value=value, threshold=threshold.threshold, message=message
                 )
 
                 self.alerts_history.append(alert)
@@ -229,24 +227,22 @@ class SlackNotificationHandler:
         try:
             import requests
 
-            color = {
-                AlertLevel.CRITICAL: "#FF0000",
-                AlertLevel.WARNING: "#FFA500",
-                AlertLevel.INFO: "#0000FF"
-            }[alert.level]
+            color = {AlertLevel.CRITICAL: "#FF0000", AlertLevel.WARNING: "#FFA500", AlertLevel.INFO: "#0000FF"}[alert.level]
 
             payload = {
-                "attachments": [{
-                    "color": color,
-                    "title": f"{alert.level.value.upper()} Alert",
-                    "text": alert.message,
-                    "fields": [
-                        {"title": "Metric", "value": alert.metric, "short": True},
-                        {"title": "Value", "value": f"{alert.value:.2f}", "short": True},
-                        {"title": "Threshold", "value": f"{alert.threshold:.2f}", "short": True},
-                        {"title": "Time", "value": datetime.fromtimestamp(alert.timestamp).isoformat(), "short": True}
-                    ]
-                }]
+                "attachments": [
+                    {
+                        "color": color,
+                        "title": f"{alert.level.value.upper()} Alert",
+                        "text": alert.message,
+                        "fields": [
+                            {"title": "Metric", "value": alert.metric, "short": True},
+                            {"title": "Value", "value": f"{alert.value:.2f}", "short": True},
+                            {"title": "Threshold", "value": f"{alert.threshold:.2f}", "short": True},
+                            {"title": "Time", "value": datetime.fromtimestamp(alert.timestamp).isoformat(), "short": True},
+                        ],
+                    }
+                ]
             }
 
             requests.post(self.webhook_url, json=payload, timeout=5)
@@ -263,7 +259,7 @@ class EmailNotificationHandler:
         smtp_port: Optional[int] = None,
         smtp_user: Optional[str] = None,
         smtp_password: Optional[str] = None,
-        recipient: Optional[str] = None
+        recipient: Optional[str] = None,
     ):
         """Initialize email handler."""
         self.smtp_host = smtp_host or os.getenv("SMTP_HOST", "smtp.gmail.com")
@@ -279,9 +275,9 @@ class EmailNotificationHandler:
 
         try:
             msg = MIMEMultipart()
-            msg['From'] = self.smtp_user
-            msg['To'] = self.recipient
-            msg['Subject'] = f"[{alert.level.value.upper()}] Prediction Market Alert: {alert.metric}"
+            msg["From"] = self.smtp_user
+            msg["To"] = self.recipient
+            msg["Subject"] = f"[{alert.level.value.upper()}] Prediction Market Alert: {alert.metric}"
 
             body = f"""
 Alert Level: {alert.level.value.upper()}
@@ -294,7 +290,7 @@ Time: {datetime.fromtimestamp(alert.timestamp).isoformat()}
 This is an automated alert from the Prediction Market ABM system.
             """
 
-            msg.attach(MIMEText(body, 'plain'))
+            msg.attach(MIMEText(body, "plain"))
 
             server = smtplib.SMTP(self.smtp_host, self.smtp_port)
             server.starttls()
@@ -313,8 +309,8 @@ class ConsoleNotificationHandler:
         """Print alert to console."""
         color_codes = {
             AlertLevel.CRITICAL: "\033[91m",  # Red
-            AlertLevel.WARNING: "\033[93m",   # Yellow
-            AlertLevel.INFO: "\033[94m"       # Blue
+            AlertLevel.WARNING: "\033[93m",  # Yellow
+            AlertLevel.INFO: "\033[94m",  # Blue
         }
         reset_code = "\033[0m"
 
@@ -342,9 +338,7 @@ def configure_logging(log_level: str = "INFO", json_logs: bool = False):
 
     structlog.configure(
         processors=processors,
-        wrapper_class=structlog.make_filtering_bound_logger(
-            getattr(logging, log_level.upper())
-        ),
+        wrapper_class=structlog.make_filtering_bound_logger(getattr(logging, log_level.upper())),
         context_class=dict,
         logger_factory=structlog.PrintLoggerFactory(),
         cache_logger_on_first_use=True,
@@ -373,14 +367,7 @@ if os.getenv("ALERT_EMAIL"):
 # Example usage functions
 def log_order_execution(order_id: str, price: float, size: float, latency_ms: float, slippage_bps: float):
     """Log order execution with metrics."""
-    log.info(
-        "order_executed",
-        order_id=order_id,
-        price=price,
-        size=size,
-        latency_ms=latency_ms,
-        slippage_bps=slippage_bps
-    )
+    log.info("order_executed", order_id=order_id, price=price, size=size, latency_ms=latency_ms, slippage_bps=slippage_bps)
 
     # Check alert thresholds
     alert_manager.check_threshold("latency_ms", latency_ms)
@@ -389,14 +376,7 @@ def log_order_execution(order_id: str, price: float, size: float, latency_ms: fl
 
 def log_trade(trade_id: str, side: str, quantity: float, price: float, pnl: float):
     """Log trade execution."""
-    log.info(
-        "trade_executed",
-        trade_id=trade_id,
-        side=side,
-        quantity=quantity,
-        price=price,
-        pnl=pnl
-    )
+    log.info("trade_executed", trade_id=trade_id, side=side, quantity=quantity, price=price, pnl=pnl)
 
     # Check for large trades
     trade_value = quantity * price
@@ -405,13 +385,7 @@ def log_trade(trade_id: str, side: str, quantity: float, price: float, pnl: floa
 
 def log_performance(sharpe: float, drawdown: float, win_rate: float, pnl: float):
     """Log performance metrics."""
-    log.info(
-        "performance_update",
-        sharpe=sharpe,
-        drawdown=drawdown,
-        win_rate=win_rate,
-        pnl=pnl
-    )
+    log.info("performance_update", sharpe=sharpe, drawdown=drawdown, win_rate=win_rate, pnl=pnl)
 
     # Check critical thresholds
     alert_manager.check_threshold("drawdown", abs(drawdown))
@@ -419,35 +393,24 @@ def log_performance(sharpe: float, drawdown: float, win_rate: float, pnl: float)
 
 def log_api_error(api: str, endpoint: str, error: str, status_code: Optional[int] = None):
     """Log API error."""
-    log.error(
-        "api_error",
-        api=api,
-        endpoint=endpoint,
-        error=error,
-        status_code=status_code
-    )
+    log.error("api_error", api=api, endpoint=endpoint, error=error, status_code=status_code)
 
 
 def log_system_metrics(cpu_percent: float, memory_percent: float, queue_depth: int):
     """Log system resource metrics."""
-    log.info(
-        "system_metrics",
-        cpu_percent=cpu_percent,
-        memory_percent=memory_percent,
-        queue_depth=queue_depth
-    )
+    log.info("system_metrics", cpu_percent=cpu_percent, memory_percent=memory_percent, queue_depth=queue_depth)
 
 
 # Export public API
 __all__ = [
-    'log',
-    'alert_manager',
-    'AlertLevel',
-    'Alert',
-    'configure_logging',
-    'log_order_execution',
-    'log_trade',
-    'log_performance',
-    'log_api_error',
-    'log_system_metrics'
+    "log",
+    "alert_manager",
+    "AlertLevel",
+    "Alert",
+    "configure_logging",
+    "log_order_execution",
+    "log_trade",
+    "log_performance",
+    "log_api_error",
+    "log_system_metrics",
 ]

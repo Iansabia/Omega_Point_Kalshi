@@ -2,12 +2,13 @@
 Execution handlers for backtesting - simulates order execution with realistic fill models.
 """
 
-import numpy as np
+import logging
 from datetime import datetime
 from typing import Optional
-import logging
 
-from .backtest_engine import Event, OrderEvent, FillEvent
+import numpy as np
+
+from .backtest_engine import Event, FillEvent, OrderEvent
 
 logger = logging.getLogger(__name__)
 
@@ -19,7 +20,7 @@ class ExecutionHandler:
     Simulates order execution with slippage and commission.
     """
 
-    def __init__(self, events_queue, data_handler, commission_model='fixed'):
+    def __init__(self, events_queue, data_handler, commission_model="fixed"):
         self.events = events_queue
         self.data_handler = data_handler
         self.commission_model = commission_model
@@ -40,7 +41,7 @@ class ExecutionHandler:
             commission = self._calculate_commission(event.quantity, fill_price)
 
             # Calculate total cost
-            if event.direction == 'BUY':
+            if event.direction == "BUY":
                 cost = fill_price * event.quantity + commission
             else:  # SELL
                 cost = fill_price * event.quantity - commission
@@ -49,12 +50,12 @@ class ExecutionHandler:
             fill = FillEvent(
                 timestamp=datetime.now(),
                 symbol=event.symbol,
-                exchange='SIMULATED',
+                exchange="SIMULATED",
                 quantity=event.quantity,
                 direction=event.direction,
                 fill_price=fill_price,
                 commission=commission,
-                cost=cost
+                cost=cost,
             )
 
             self.events.put(fill)
@@ -64,31 +65,31 @@ class ExecutionHandler:
         Calculate fill price with slippage model.
         """
         # Get latest bar for the symbol
-        bar = self.data_handler.get_latest_bar_value(event.symbol, 'close')
+        bar = self.data_handler.get_latest_bar_value(event.symbol, "close")
 
         if bar is None:
             return None
 
         # Apply slippage model
-        if event.order_type == 'MKT':
+        if event.order_type == "MKT":
             # Market orders: add slippage
             slippage_bps = 5  # 5 basis points
             slippage_factor = 1 + (slippage_bps / 10000)
 
-            if event.direction == 'BUY':
+            if event.direction == "BUY":
                 fill_price = bar * slippage_factor
             else:  # SELL
                 fill_price = bar / slippage_factor
 
             return fill_price
 
-        elif event.order_type == 'LMT':
+        elif event.order_type == "LMT":
             # Limit orders: use limit price if available
             if event.price is not None:
                 # Simple model: execute if market price better than limit
-                if event.direction == 'BUY' and bar <= event.price:
+                if event.direction == "BUY" and bar <= event.price:
                     return event.price
-                elif event.direction == 'SELL' and bar >= event.price:
+                elif event.direction == "SELL" and bar >= event.price:
                     return event.price
                 else:
                     # Limit not hit, no fill
@@ -102,16 +103,16 @@ class ExecutionHandler:
         """
         Calculate commission based on model.
         """
-        if self.commission_model == 'fixed':
+        if self.commission_model == "fixed":
             # Fixed commission per trade
             return 1.0
 
-        elif self.commission_model == 'percentage':
+        elif self.commission_model == "percentage":
             # Percentage of trade value
             commission_rate = 0.001  # 10 bps
             return quantity * price * commission_rate
 
-        elif self.commission_model == 'tiered':
+        elif self.commission_model == "tiered":
             # Tiered based on trade size
             trade_value = quantity * price
             if trade_value < 1000:
@@ -129,33 +130,33 @@ class SimulatedExecutionHandler(ExecutionHandler):
     Simulated execution with realistic slippage and partial fills.
     """
 
-    def __init__(self, events_queue, data_handler, slippage_model='constant'):
-        super().__init__(events_queue, data_handler, commission_model='percentage')
+    def __init__(self, events_queue, data_handler, slippage_model="constant"):
+        super().__init__(events_queue, data_handler, commission_model="percentage")
         self.slippage_model = slippage_model
 
     def _calculate_fill_price(self, event: OrderEvent) -> Optional[float]:
         """
         Calculate fill price with more realistic slippage model.
         """
-        bar = self.data_handler.get_latest_bar_value(event.symbol, 'close')
+        bar = self.data_handler.get_latest_bar_value(event.symbol, "close")
 
         if bar is None:
             return None
 
         # Apply slippage based on model
-        if self.slippage_model == 'constant':
+        if self.slippage_model == "constant":
             # Fixed slippage
             slippage_bps = 5
             slippage_factor = 1 + (slippage_bps / 10000)
 
-            if event.direction == 'BUY':
+            if event.direction == "BUY":
                 return bar * slippage_factor
             else:
                 return bar / slippage_factor
 
-        elif self.slippage_model == 'volume_dependent':
+        elif self.slippage_model == "volume_dependent":
             # Slippage increases with order size
-            volume = self.data_handler.get_latest_bar_value(event.symbol, 'volume')
+            volume = self.data_handler.get_latest_bar_value(event.symbol, "volume")
 
             if volume is None or volume == 0:
                 volume = 10000  # Default
@@ -165,19 +166,19 @@ class SimulatedExecutionHandler(ExecutionHandler):
 
             slippage_factor = 1 + (slippage_bps / 10000)
 
-            if event.direction == 'BUY':
+            if event.direction == "BUY":
                 return bar * slippage_factor
             else:
                 return bar / slippage_factor
 
-        elif self.slippage_model == 'random':
+        elif self.slippage_model == "random":
             # Random slippage with normal distribution
             slippage_bps = np.random.normal(5, 2)  # Mean 5 bps, std 2 bps
             slippage_bps = max(0, slippage_bps)  # No negative slippage
 
             slippage_factor = 1 + (slippage_bps / 10000)
 
-            if event.direction == 'BUY':
+            if event.direction == "BUY":
                 return bar * slippage_factor
             else:
                 return bar / slippage_factor
@@ -193,14 +194,14 @@ class PredictionMarketExecutionHandler(ExecutionHandler):
     """
 
     def __init__(self, events_queue, data_handler, spread_bps: float = 50):
-        super().__init__(events_queue, data_handler, commission_model='percentage')
+        super().__init__(events_queue, data_handler, commission_model="percentage")
         self.spread_bps = spread_bps
 
     def _calculate_fill_price(self, event: OrderEvent) -> Optional[float]:
         """
         Calculate fill price accounting for bid-ask spread.
         """
-        mid_price = self.data_handler.get_latest_bar_value(event.symbol, 'close')
+        mid_price = self.data_handler.get_latest_bar_value(event.symbol, "close")
 
         if mid_price is None:
             return None
@@ -209,7 +210,7 @@ class PredictionMarketExecutionHandler(ExecutionHandler):
         half_spread = (self.spread_bps / 10000) / 2
 
         # Market taker pays the spread
-        if event.direction == 'BUY':
+        if event.direction == "BUY":
             fill_price = mid_price * (1 + half_spread)
         else:  # SELL
             fill_price = mid_price * (1 - half_spread)

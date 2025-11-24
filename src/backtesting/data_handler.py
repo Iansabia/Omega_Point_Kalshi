@@ -2,12 +2,13 @@
 Data handlers for backtesting - provides historical market data in drip-feed fashion.
 """
 
-import pandas as pd
-import numpy as np
+import logging
+from abc import ABC, abstractmethod
 from datetime import datetime
 from typing import Dict, List, Optional
-from abc import ABC, abstractmethod
-import logging
+
+import numpy as np
+import pandas as pd
 
 from .backtest_engine import Event, MarketEvent
 
@@ -65,11 +66,7 @@ class CSVDataHandler(DataHandler):
         """
         for symbol in self.symbol_list:
             try:
-                self.symbol_data[symbol] = pd.read_csv(
-                    f"{self.csv_dir}/{symbol}.csv",
-                    index_col='datetime',
-                    parse_dates=True
-                )
+                self.symbol_data[symbol] = pd.read_csv(f"{self.csv_dir}/{symbol}.csv", index_col="datetime", parse_dates=True)
                 self.latest_symbol_data[symbol] = []
                 self._current_bars_index[symbol] = 0
 
@@ -116,12 +113,12 @@ class CSVDataHandler(DataHandler):
 
                 # Convert to dict for easier access
                 bar_dict = {
-                    'datetime': bar.name,
-                    'open': bar.get('open', bar.get('Open')),
-                    'high': bar.get('high', bar.get('High')),
-                    'low': bar.get('low', bar.get('Low')),
-                    'close': bar.get('close', bar.get('Close')),
-                    'volume': bar.get('volume', bar.get('Volume', 0))
+                    "datetime": bar.name,
+                    "open": bar.get("open", bar.get("Open")),
+                    "high": bar.get("high", bar.get("High")),
+                    "low": bar.get("low", bar.get("Low")),
+                    "close": bar.get("close", bar.get("Close")),
+                    "volume": bar.get("volume", bar.get("Volume", 0)),
                 }
 
                 self.latest_symbol_data[symbol].append(bar_dict)
@@ -132,11 +129,13 @@ class CSVDataHandler(DataHandler):
                 self.continue_backtest = False
 
         # Generate MarketEvent
-        self.events.put(MarketEvent(
-            timestamp=datetime.now(),
-            symbol=self.symbol_list[0],  # Use first symbol as reference
-            data=self.latest_symbol_data
-        ))
+        self.events.put(
+            MarketEvent(
+                timestamp=datetime.now(),
+                symbol=self.symbol_list[0],  # Use first symbol as reference
+                data=self.latest_symbol_data,
+            )
+        )
 
 
 class PandasDataHandler(DataHandler):
@@ -190,13 +189,13 @@ class PandasDataHandler(DataHandler):
                 bar = self.symbol_data[symbol].iloc[idx]
 
                 bar_dict = {
-                    'datetime': bar.name if hasattr(bar, 'name') else idx,
-                    'open': bar.get('open', bar.get('Open', 0)),
-                    'high': bar.get('high', bar.get('High', 0)),
-                    'low': bar.get('low', bar.get('Low', 0)),
-                    'close': bar.get('close', bar.get('Close', 0)),
-                    'volume': bar.get('volume', bar.get('Volume', 0)),
-                    'price': bar.get('price', bar.get('Close', 0))  # For single price series
+                    "datetime": bar.name if hasattr(bar, "name") else idx,
+                    "open": bar.get("open", bar.get("Open", 0)),
+                    "high": bar.get("high", bar.get("High", 0)),
+                    "low": bar.get("low", bar.get("Low", 0)),
+                    "close": bar.get("close", bar.get("Close", 0)),
+                    "volume": bar.get("volume", bar.get("Volume", 0)),
+                    "price": bar.get("price", bar.get("Close", 0)),  # For single price series
                 }
 
                 self.latest_symbol_data[symbol].append(bar_dict)
@@ -206,8 +205,4 @@ class PandasDataHandler(DataHandler):
                 self.continue_backtest = False
 
         if self.continue_backtest:
-            self.events.put(MarketEvent(
-                timestamp=datetime.now(),
-                symbol=self.symbol_list[0],
-                data=self.latest_symbol_data
-            ))
+            self.events.put(MarketEvent(timestamp=datetime.now(), symbol=self.symbol_list[0], data=self.latest_symbol_data))

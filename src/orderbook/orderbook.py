@@ -1,6 +1,8 @@
 import heapq
-from typing import List, Dict, Tuple
+from typing import Dict, List, Tuple
+
 from .order import Order
+
 
 class OrderBook:
     def __init__(self):
@@ -14,12 +16,12 @@ class OrderBook:
         Bids are stored in a max-heap (using negated prices).
         Asks are stored in a min-heap.
         """
-        if order.side == 'BUY':
+        if order.side == "BUY":
             # Negate price for max-heap behavior using Python's min-heap
             heapq.heappush(self.bids, (-order.price, order.timestamp, order))
         else:
             heapq.heappush(self.asks, (order.price, order.timestamp, order))
-        
+
         self.orders[order.order_id] = order
 
     def get_best_bid(self) -> float:
@@ -31,7 +33,7 @@ class OrderBook:
     def get_best_ask(self) -> float:
         """Get best ask price."""
         if not self.asks:
-            return float('inf')
+            return float("inf")
         return self.asks[0][0]
 
     def get_best_bid_order(self) -> Order:
@@ -50,7 +52,7 @@ class OrderBook:
         """Get mid-price between best bid and ask."""
         bid = self.get_best_bid()
         ask = self.get_best_ask()
-        if bid == 0.0 or ask == float('inf'):
+        if bid == 0.0 or ask == float("inf"):
             return None  # Changed to None for consistency
         return (bid + ask) / 2.0
 
@@ -58,7 +60,7 @@ class OrderBook:
         """Get bid-ask spread."""
         bid = self.get_best_bid()
         ask = self.get_best_ask()
-        if bid == 0.0 or ask == float('inf'):
+        if bid == 0.0 or ask == float("inf"):
             return None  # Changed to None for consistency
         return ask - bid
 
@@ -71,7 +73,7 @@ class OrderBook:
 
         # Remove from appropriate heap
         # Note: This is O(n) operation. For production, consider using a better data structure.
-        if order.side == 'BUY':
+        if order.side == "BUY":
             self.bids = [(p, ts, o) for p, ts, o in self.bids if o.order_id != order_id]
             heapq.heapify(self.bids)
         else:
@@ -85,7 +87,7 @@ class OrderBook:
         """
         bid_vol = sum(o.remaining for _, _, o in self.bids)
         ask_vol = sum(o.remaining for _, _, o in self.asks)
-        
+
         if bid_vol + ask_vol == 0:
             return 0.0
         return (bid_vol - ask_vol) / (bid_vol + ask_vol)
@@ -99,11 +101,8 @@ class OrderBook:
         # Bids are (-price, ts, order)
         top_bids = heapq.nsmallest(levels, self.bids)
         bid_levels = [(-p, o.remaining) for p, _, o in top_bids]
-        
+
         top_asks = heapq.nsmallest(levels, self.asks)
         ask_levels = [(p, o.remaining) for p, _, o in top_asks]
-        
-        return {
-            "bids": bid_levels,
-            "asks": ask_levels
-        }
+
+        return {"bids": bid_levels, "asks": ask_levels}

@@ -1,5 +1,5 @@
 """Risk management module."""
 
-from .risk_manager import RiskManager, RiskLimits, PortfolioRiskManager
+from .risk_manager import PortfolioRiskManager, RiskLimits, RiskManager
 
-__all__ = ['RiskManager', 'RiskLimits', 'PortfolioRiskManager']
+__all__ = ["RiskManager", "RiskLimits", "PortfolioRiskManager"]

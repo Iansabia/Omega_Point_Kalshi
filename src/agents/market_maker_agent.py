@@ -1,34 +1,39 @@
 import random
-import numpy as np
-from typing import List, Tuple
-from src.agents.base_agent import BaseTrader
-from src.orderbook.order import Order, OrderType
 import time
 import uuid
+from typing import List, Tuple
+
+import numpy as np
+
+from src.agents.base_agent import BaseTrader
+from src.orderbook.order import Order, OrderType
+
 
 class MarketMakerAgent(BaseTrader):
     """
     Market Maker using Avellaneda-Stoikov framework.
     """
 
-    def __init__(self, model, initial_wealth: float = 100000.0, target_inventory: float = 0.0, risk_param: float = 0.1, risk_limits=None):
+    def __init__(
+        self, model, initial_wealth: float = 100000.0, target_inventory: float = 0.0, risk_param: float = 0.1, risk_limits=None
+    ):
         super().__init__(model, initial_wealth=initial_wealth, risk_limits=risk_limits)
         self.risk_param = risk_param
         self.target_inventory = target_inventory
-        self.inventory = 0.0 # Tracks current inventory
-        self.half_spread = 0.02 # Base spread
+        self.inventory = 0.0  # Tracks current inventory
+        self.half_spread = 0.02  # Base spread
 
     def observe_market(self):
         """Observe market and update inventory."""
         self.inventory = self.position
 
         return {
-            'price': self.model.current_price,
-            'inventory': self.inventory,
-            'target_inventory': self.target_inventory,
-            'deviation': self.inventory - self.target_inventory,
-            'bid': self.model.order_book.get_best_bid() if hasattr(self.model, 'order_book') else None,
-            'ask': self.model.order_book.get_best_ask() if hasattr(self.model, 'order_book') else None
+            "price": self.model.current_price,
+            "inventory": self.inventory,
+            "target_inventory": self.target_inventory,
+            "deviation": self.inventory - self.target_inventory,
+            "bid": self.model.order_book.get_best_bid() if hasattr(self.model, "order_book") else None,
+            "ask": self.model.order_book.get_best_ask() if hasattr(self.model, "order_book") else None,
         }
 
     def estimate_mid_price(self) -> float:
@@ -82,14 +87,14 @@ class MarketMakerAgent(BaseTrader):
         Place two-sided quotes.
         """
         bid_price, ask_price = self.quote_prices()
-        size = 10 # Standard quote size
-        
+        size = 10  # Standard quote size
+
         # Cancel previous orders?
         # In this simple model, we just place new ones.
         # Real MM would cancel/replace.
-        
-        self._place_limit_order('BUY', bid_price, size)
-        self._place_limit_order('SELL', ask_price, size)
+
+        self._place_limit_order("BUY", bid_price, size)
+        self._place_limit_order("SELL", ask_price, size)
 
     def _place_limit_order(self, side: str, price: float, quantity: float):
         order = Order(
@@ -99,6 +104,6 @@ class MarketMakerAgent(BaseTrader):
             quantity=quantity,
             timestamp=time.time(),
             trader_id=self.trader_id,
-            order_type=OrderType.LIMIT
+            order_type=OrderType.LIMIT,
         )
         self.submit_orders([order])

@@ -2,10 +2,11 @@
 Monte Carlo simulation for risk assessment and strategy validation.
 """
 
+import logging
+from typing import Dict, List, Optional
+
 import numpy as np
 import pandas as pd
-from typing import List, Dict, Optional
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -48,18 +49,21 @@ class MonteCarloSimulator:
             max_dd = self._calculate_drawdown(cumulative_returns)
             sharpe = self._calculate_sharpe(resampled)
 
-            results.append({
-                'simulation': i,
-                'final_return': final_return,
-                'max_drawdown': max_dd,
-                'sharpe_ratio': sharpe,
-                'win_rate': (resampled > 0).sum() / len(resampled)
-            })
+            results.append(
+                {
+                    "simulation": i,
+                    "final_return": final_return,
+                    "max_drawdown": max_dd,
+                    "sharpe_ratio": sharpe,
+                    "win_rate": (resampled > 0).sum() / len(resampled),
+                }
+            )
 
         return results
 
-    def estimate_confidence_intervals(self, results: List[Dict], metric: str = 'final_return',
-                                     confidence_levels: List[float] = [0.05, 0.5, 0.95]) -> Dict:
+    def estimate_confidence_intervals(
+        self, results: List[Dict], metric: str = "final_return", confidence_levels: List[float] = [0.05, 0.5, 0.95]
+    ) -> Dict:
         """
         Calculate confidence intervals from Monte Carlo results.
 
@@ -79,12 +83,13 @@ class MonteCarloSimulator:
 
         intervals = {}
         for level, value in zip(confidence_levels, percentiles):
-            intervals[f'p{int(level*100)}'] = value
+            intervals[f"p{int(level*100)}"] = value
 
         return intervals
 
-    def calculate_probability_of_ruin(self, trades: List[float], initial_capital: float,
-                                     ruin_threshold: float = 0.5, n_simulations: int = 1000) -> float:
+    def calculate_probability_of_ruin(
+        self, trades: List[float], initial_capital: float, ruin_threshold: float = 0.5, n_simulations: int = 1000
+    ) -> float:
         """
         Estimate probability of losing more than ruin_threshold of capital.
 
@@ -117,8 +122,7 @@ class MonteCarloSimulator:
 
         return ruin_count / n_simulations
 
-    def simulate_future_paths(self, historical_returns: pd.Series, n_days: int = 252,
-                            n_simulations: int = 1000) -> np.ndarray:
+    def simulate_future_paths(self, historical_returns: pd.Series, n_days: int = 252, n_simulations: int = 1000) -> np.ndarray:
         """
         Simulate future price/return paths based on historical distribution.
 
@@ -138,11 +142,7 @@ class MonteCarloSimulator:
         std_return = historical_returns.std()
 
         # Generate simulated paths
-        simulated_paths = np.random.normal(
-            loc=mean_return,
-            scale=std_return,
-            size=(n_simulations, n_days)
-        )
+        simulated_paths = np.random.normal(loc=mean_return, scale=std_return, size=(n_simulations, n_days))
 
         return simulated_paths
 
@@ -169,15 +169,14 @@ class MonteCarloSimulator:
             max_drawdowns.append(max_dd)
 
         return {
-            'mean_max_dd': np.mean(max_drawdowns),
-            'median_max_dd': np.median(max_drawdowns),
-            'p5_max_dd': np.percentile(max_drawdowns, 5),
-            'p95_max_dd': np.percentile(max_drawdowns, 95),
-            'worst_max_dd': np.max(max_drawdowns)
+            "mean_max_dd": np.mean(max_drawdowns),
+            "median_max_dd": np.median(max_drawdowns),
+            "p5_max_dd": np.percentile(max_drawdowns, 5),
+            "p95_max_dd": np.percentile(max_drawdowns, 95),
+            "worst_max_dd": np.max(max_drawdowns),
         }
 
-    def generate_report(self, trades: List[float], initial_capital: float = 100000,
-                       n_simulations: int = 1000) -> Dict:
+    def generate_report(self, trades: List[float], initial_capital: float = 100000, n_simulations: int = 1000) -> Dict:
         """
         Generate comprehensive Monte Carlo risk report.
 
@@ -195,9 +194,9 @@ class MonteCarloSimulator:
         results = self.resample_trades(trades, n_simulations=n_simulations)
 
         # Calculate confidence intervals
-        final_return_ci = self.estimate_confidence_intervals(results, 'final_return')
-        max_dd_ci = self.estimate_confidence_intervals(results, 'max_drawdown')
-        sharpe_ci = self.estimate_confidence_intervals(results, 'sharpe_ratio')
+        final_return_ci = self.estimate_confidence_intervals(results, "final_return")
+        max_dd_ci = self.estimate_confidence_intervals(results, "max_drawdown")
+        sharpe_ci = self.estimate_confidence_intervals(results, "sharpe_ratio")
 
         # Calculate probability of ruin
         prob_ruin_50 = self.calculate_probability_of_ruin(trades, initial_capital, 0.5, n_simulations)
@@ -207,34 +206,16 @@ class MonteCarloSimulator:
         dd_stats = self.analyze_drawdown_distribution(trades, n_simulations)
 
         report = {
-            'n_simulations': n_simulations,
-            'n_trades': len(trades),
-
-            'final_return': {
-                'mean': np.mean([r['final_return'] for r in results]),
-                **final_return_ci
+            "n_simulations": n_simulations,
+            "n_trades": len(trades),
+            "final_return": {"mean": np.mean([r["final_return"] for r in results]), **final_return_ci},
+            "max_drawdown": {"mean": np.mean([r["max_drawdown"] for r in results]), **max_dd_ci, **dd_stats},
+            "sharpe_ratio": {"mean": np.mean([r["sharpe_ratio"] for r in results]), **sharpe_ci},
+            "win_rate": {
+                "mean": np.mean([r["win_rate"] for r in results]),
+                "median": np.median([r["win_rate"] for r in results]),
             },
-
-            'max_drawdown': {
-                'mean': np.mean([r['max_drawdown'] for r in results]),
-                **max_dd_ci,
-                **dd_stats
-            },
-
-            'sharpe_ratio': {
-                'mean': np.mean([r['sharpe_ratio'] for r in results]),
-                **sharpe_ci
-            },
-
-            'win_rate': {
-                'mean': np.mean([r['win_rate'] for r in results]),
-                'median': np.median([r['win_rate'] for r in results])
-            },
-
-            'probability_of_ruin': {
-                '50pct_loss': prob_ruin_50,
-                '25pct_loss': prob_ruin_25
-            }
+            "probability_of_ruin": {"50pct_loss": prob_ruin_50, "25pct_loss": prob_ruin_25},
         }
 
         return report
@@ -246,7 +227,7 @@ class MonteCarloSimulator:
             return 0.0
 
         running_max = np.maximum.accumulate(cumulative_returns)
-        drawdown = (cumulative_returns - running_max)
+        drawdown = cumulative_returns - running_max
         return abs(drawdown.min()) if len(drawdown) > 0 else 0.0
 
     @staticmethod

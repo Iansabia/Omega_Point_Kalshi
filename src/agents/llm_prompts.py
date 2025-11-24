@@ -2,7 +2,7 @@ class LLMPrompts:
     """
     Prompt templates and engineering for LLM agents.
     """
-    
+
     SYSTEM_TEMPLATE = """
     You are a {risk_profile} trader in a financial market simulation.
     Trading philosophy: {philosophy}
@@ -32,13 +32,13 @@ class LLMPrompts:
         # Fill in defaults based on profile
         philosophy = "Growth" if risk_profile == "aggressive" else "Preservation"
         tolerance = "High" if risk_profile == "aggressive" else "Low"
-        
+
         return LLMPrompts.SYSTEM_TEMPLATE.format(
             risk_profile=risk_profile,
             philosophy=philosophy,
             tolerance=tolerance,
             limits="Max 10% of portfolio",
             costs="0.1% per trade",
-            state="{state}", # Left for runtime formatting
-            data="{data}"    # Left for runtime formatting
+            state="{state}",  # Left for runtime formatting
+            data="{data}",  # Left for runtime formatting
         )

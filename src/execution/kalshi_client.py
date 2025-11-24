@@ -1,17 +1,19 @@
-import os
-import requests
-import json
-from typing import Dict, Any, Optional
-import time
 import base64
 import hashlib
+import json
+import os
+import time
+from typing import Any, Dict, Optional
+
+import requests
+from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import padding, rsa
-from cryptography.hazmat.backends import default_backend
 from dotenv import load_dotenv
 
 # Load environment variables from .env file
 load_dotenv()
+
 
 class KalshiClient:
     """
@@ -24,8 +26,7 @@ class KalshiClient:
 
     BASE_URL = "https://api.elections.kalshi.com/trade-api/v2"
 
-    def __init__(self, api_key: str = None, private_key_path: str = None,
-                 email: str = None, password: str = None):
+    def __init__(self, api_key: str = None, private_key_path: str = None, email: str = None, password: str = None):
         """
         Initialize Kalshi client with API key or email/password.
 
@@ -38,13 +39,13 @@ class KalshiClient:
             password: Your Kalshi account password
         """
         # API Key authentication
-        self.api_key_id = (api_key or os.getenv("KALSHI_API_KEY_ID") or "").strip('"\'')
-        self.private_key_path = (private_key_path or os.getenv("KALSHI_PRIVATE_KEY_PATH") or "").strip('"\'')
+        self.api_key_id = (api_key or os.getenv("KALSHI_API_KEY_ID") or "").strip("\"'")
+        self.private_key_path = (private_key_path or os.getenv("KALSHI_PRIVATE_KEY_PATH") or "").strip("\"'")
         self.private_key = None
 
         # Email/Password authentication (fallback)
-        self.email = (email or os.getenv("KALSHI_EMAIL") or "").strip('"\'')
-        self.password = (password or os.getenv("KALSHI_PASSWORD") or "").strip('"\'')
+        self.email = (email or os.getenv("KALSHI_EMAIL") or "").strip("\"'")
+        self.password = (password or os.getenv("KALSHI_PASSWORD") or "").strip("\"'")
         self.token = None
         self.member_id = None
 
@@ -62,11 +63,9 @@ class KalshiClient:
     def _load_private_key(self):
         """Load RSA private key from file."""
         try:
-            with open(self.private_key_path, 'rb') as key_file:
+            with open(self.private_key_path, "rb") as key_file:
                 self.private_key = serialization.load_pem_private_key(
-                    key_file.read(),
-                    password=None,
-                    backend=default_backend()
+                    key_file.read(), password=None, backend=default_backend()
                 )
         except FileNotFoundError:
             print(f"Error: Private key file not found at {self.private_key_path}")
@@ -80,10 +79,7 @@ class KalshiClient:
         Login and retrieve session token.
         """
         url = f"{self.BASE_URL}/login"
-        payload = {
-            "email": self.email,
-            "password": self.password
-        }
+        payload = {"email": self.email, "password": self.password}
         response = requests.post(url, json=payload)
         if response.status_code == 200:
             data = response.json()
@@ -109,14 +105,10 @@ class KalshiClient:
         message = f"{method}{path}{body}"
 
         # Sign with private key
-        signature = self.private_key.sign(
-            message.encode('utf-8'),
-            padding.PKCS1v15(),
-            hashes.SHA256()
-        )
+        signature = self.private_key.sign(message.encode("utf-8"), padding.PKCS1v15(), hashes.SHA256())
 
         # Return base64-encoded signature
-        return base64.b64encode(signature).decode('utf-8')
+        return base64.b64encode(signature).decode("utf-8")
 
     def _get_headers(self, method: str = "GET", path: str = "", body: str = "") -> Dict[str, str]:
         """
@@ -124,9 +116,7 @@ class KalshiClient:
 
         Uses API key authentication if available, otherwise falls back to token auth.
         """
-        headers = {
-            "Content-Type": "application/json"
-        }
+        headers = {"Content-Type": "application/json"}
 
         # Use API key authentication if available
         if self.private_key and self.api_key_id:
@@ -158,10 +148,7 @@ class KalshiClient:
         book_response = requests.get(book_url, headers=self._get_headers("GET", book_path))
         book_data = book_response.json() if book_response.status_code == 200 else {}
 
-        return {
-            "market": market_data,
-            "orderbook": book_data
-        }
+        return {"market": market_data, "orderbook": book_data}
 
     def place_order(self, ticker: str, side: str, count: int, price: int) -> Dict[str, Any]:
         """
@@ -183,7 +170,7 @@ class KalshiClient:
             "type": "limit",
             "side": side.lower(),
             "count": count,
-            "price": price # Price is usually specified for the side you are buying
+            "price": price,  # Price is usually specified for the side you are buying
         }
 
         body = json.dumps(payload)
@@ -205,7 +192,7 @@ class KalshiClient:
         status: Optional[str] = None,
         event_ticker: Optional[str] = None,
         limit: int = 200,
-        cursor: Optional[str] = None
+        cursor: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         Get markets with optional filters.
@@ -242,11 +229,7 @@ class KalshiClient:
             return {"markets": [], "cursor": None}
 
     def get_events(
-        self,
-        series_ticker: Optional[str] = None,
-        status: Optional[str] = None,
-        limit: int = 200,
-        cursor: Optional[str] = None
+        self, series_ticker: Optional[str] = None, status: Optional[str] = None, limit: int = 200, cursor: Optional[str] = None
     ) -> Dict[str, Any]:
         """
         Get events with optional filters.
@@ -285,7 +268,7 @@ class KalshiClient:
         market_ticker: str,
         period_interval: int = 60,
         start_ts: Optional[int] = None,
-        end_ts: Optional[int] = None
+        end_ts: Optional[int] = None,
     ) -> Dict[str, Any]:
         """
         Get historical candlestick data for a market.
@@ -318,10 +301,7 @@ class KalshiClient:
             return {"candlesticks": []}
 
     def get_all_markets_paginated(
-        self,
-        series_ticker: Optional[str] = None,
-        status: Optional[str] = None,
-        max_results: Optional[int] = None
+        self, series_ticker: Optional[str] = None, status: Optional[str] = None, max_results: Optional[int] = None
     ) -> list:
         """
         Get all markets using pagination.
@@ -337,13 +317,16 @@ class KalshiClient:
         all_markets = []
         cursor = None
         count = 0
+        page = 0
 
         while True:
-            response = self.get_markets(
-                series_ticker=series_ticker,
-                status=status,
-                cursor=cursor
-            )
+            page += 1
+            print(f"   Fetching page {page}... (total so far: {count})")
+            response = self.get_markets(series_ticker=series_ticker, status=status, cursor=cursor, limit=100)
+
+            if not response:
+                print("   No response from API")
+                break
 
             markets = response.get("markets", [])
             all_markets.extend(markets)
@@ -361,3 +344,92 @@ class KalshiClient:
             time.sleep(0.1)
 
         return all_markets
+
+    def get_market(self, ticker: str) -> Dict[str, Any]:
+        """
+        Get detailed information about a specific market.
+
+        Args:
+            ticker: Market ticker
+
+        Returns:
+            Dict with market details
+        """
+        url = f"{self.BASE_URL}/markets/{ticker}"
+        path = f"/trade-api/v2/markets/{ticker}"
+
+        response = requests.get(url, headers=self._get_headers("GET", path))
+
+        if response.status_code == 200:
+            return response.json().get("market", {})
+        else:
+            print(f"Error fetching market {ticker}: {response.status_code} - {response.text}")
+            return {}
+
+    def get_market_trades(
+        self, ticker: str, min_ts: Optional[int] = None, max_ts: Optional[int] = None, limit: int = 100, cursor: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """
+        Get historical trades for a market.
+
+        Args:
+            ticker: Market ticker
+            min_ts: Minimum timestamp (Unix seconds)
+            max_ts: Maximum timestamp (Unix seconds)
+            limit: Results per page (max 100)
+            cursor: Pagination cursor
+
+        Returns:
+            Dict with 'trades' list and 'cursor' for pagination
+        """
+        url = f"{self.BASE_URL}/markets/trades"
+        params = {"ticker": ticker, "limit": limit}
+
+        if min_ts:
+            params["min_ts"] = min_ts
+        if max_ts:
+            params["max_ts"] = max_ts
+        if cursor:
+            params["cursor"] = cursor
+
+        path = f"/trade-api/v2/markets/trades"
+        response = requests.get(url, params=params, headers=self._get_headers("GET", path))
+
+        if response.status_code == 200:
+            return response.json()
+        else:
+            print(f"Error fetching trades for {ticker}: {response.status_code} - {response.text}")
+            return {"trades": []}
+
+    def get_all_market_trades(self, ticker: str, min_ts: Optional[int] = None, max_ts: Optional[int] = None) -> list:
+        """
+        Get all historical trades for a market (with pagination).
+
+        Args:
+            ticker: Market ticker
+            min_ts: Minimum timestamp
+            max_ts: Maximum timestamp
+
+        Returns:
+            List of all trades
+        """
+        all_trades = []
+        cursor = None
+        page = 0
+
+        while True:
+            page += 1
+            print(f"   Fetching trades page {page}... (total so far: {len(all_trades)})")
+
+            response = self.get_market_trades(ticker=ticker, min_ts=min_ts, max_ts=max_ts, cursor=cursor)
+
+            trades = response.get("trades", [])
+            all_trades.extend(trades)
+
+            cursor = response.get("cursor")
+            if not cursor or not trades:
+                break
+
+            time.sleep(0.1)  # Rate limiting
+
+        return all_trades

@@ -1,8 +1,10 @@
-import numpy as np
-from typing import List, Dict, Any, Optional
 import logging
+from typing import Any, Dict, List, Optional
+
+import numpy as np
 
 logger = logging.getLogger(__name__)
+
 
 class SentimentModel:
     """
@@ -27,23 +29,24 @@ class SentimentModel:
         """
         try:
             from transformers import pipeline
+
             # Lazy loading to avoid overhead if not used
-            if not hasattr(self, '_finbert'):
+            if not hasattr(self, "_finbert"):
                 # Use a smaller distilled model if possible, but standard FinBERT is requested
                 self._finbert = pipeline("sentiment-analysis", model="ProsusAI/finbert")
-            
+
             result = self._finbert(text)[0]
             # FinBERT returns labels: 'positive', 'negative', 'neutral'
-            label = result['label']
-            score = result['score']
-            
-            if label == 'positive':
+            label = result["label"]
+            score = result["score"]
+
+            if label == "positive":
                 return score
-            elif label == 'negative':
+            elif label == "negative":
                 return -score
-            else: # neutral
+            else:  # neutral
                 return 0.0
-                
+
         except ImportError:
             print("Transformers library not found. Using VADER fallback.")
             return self.analyze_sentiment_vader(text)
@@ -59,16 +62,17 @@ class SentimentModel:
         try:
             if self._vader is None:
                 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
+
                 self._vader = SentimentIntensityAnalyzer()
 
             scores = self._vader.polarity_scores(text)
-            return scores['compound']  # Returns value between -1 and 1
+            return scores["compound"]  # Returns value between -1 and 1
 
         except ImportError:
             logger.warning("vaderSentiment library not found. Using fallback.")
             # Simple fallback dictionary
-            positive_words = {'bullish', 'up', 'growth', 'profit', 'win', 'good', 'high', 'victory', 'strong', 'beat'}
-            negative_words = {'bearish', 'down', 'loss', 'crash', 'lose', 'bad', 'low', 'defeat', 'weak', 'fail'}
+            positive_words = {"bullish", "up", "growth", "profit", "win", "good", "high", "victory", "strong", "beat"}
+            negative_words = {"bearish", "down", "loss", "crash", "lose", "bad", "low", "defeat", "weak", "fail"}
 
             words = text.lower().split()
             score = 0
@@ -152,7 +156,7 @@ class SentimentModel:
                 "gamma1": 0.0,
                 "gamma2": 0.0,
                 "is_herding": False,
-                "message": f"Insufficient data: {len(self.csad_history)}/{min_periods}"
+                "message": f"Insufficient data: {len(self.csad_history)}/{min_periods}",
             }
 
         try:
@@ -164,7 +168,7 @@ class SentimentModel:
 
             # Independent variables: |R_m| and (R_m)²
             x1 = np.abs(rm)
-            x2 = rm ** 2
+            x2 = rm**2
 
             # Stack into design matrix [intercept, |R_m|, (R_m)²]
             X = np.column_stack([np.ones(len(y)), x1, x2])
@@ -176,7 +180,7 @@ class SentimentModel:
             # Calculate residuals and statistics
             y_pred = X @ beta
             residuals = y - y_pred
-            mse = np.mean(residuals ** 2)
+            mse = np.mean(residuals**2)
 
             # Standard errors (simplified)
             se_gamma2 = np.sqrt(mse / len(y))  # Simplified standard error
@@ -193,15 +197,10 @@ class SentimentModel:
                 "gamma2": gamma2,
                 "t_statistic": t_stat,
                 "is_herding": is_herding,
-                "r_squared": 1 - (np.sum(residuals ** 2) / np.sum((y - y.mean()) ** 2)),
-                "n_periods": len(y)
+                "r_squared": 1 - (np.sum(residuals**2) / np.sum((y - y.mean()) ** 2)),
+                "n_periods": len(y),
             }
 
         except Exception as e:
             logger.error(f"Herding detection error: {e}")
-            return {
-                "gamma1": 0.0,
-                "gamma2": 0.0,
-                "is_herding": False,
-                "error": str(e)
-            }
+            return {"gamma1": 0.0, "gamma2": 0.0, "is_herding": False, "error": str(e)}
