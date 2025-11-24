@@ -11,6 +11,9 @@ from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import padding, rsa
 from dotenv import load_dotenv
 
+from src.execution.circuit_breaker import kalshi_breaker, CircuitBreakerOpenError
+from src.execution.audit_log import audit_logger
+
 # Load environment variables from .env file
 load_dotenv()
 
@@ -132,30 +135,62 @@ class KalshiClient:
 
         return headers
 
+    @kalshi_breaker
     def get_market_data(self, ticker: str) -> Dict[str, Any]:
         """
         Get market details and current order book.
         """
-        # Get market details
-        path = f"/trade-api/v2/markets/{ticker}"
-        url = f"{self.BASE_URL}/markets/{ticker}"
-        response = requests.get(url, headers=self._get_headers("GET", path))
-        market_data = response.json() if response.status_code == 200 else {}
+        start_time = time.time()
 
-        # Get order book
-        book_path = f"/trade-api/v2/markets/{ticker}/orderbook"
-        book_url = f"{self.BASE_URL}/markets/{ticker}/orderbook"
-        book_response = requests.get(book_url, headers=self._get_headers("GET", book_path))
-        book_data = book_response.json() if book_response.status_code == 200 else {}
+        try:
+            # Get market details
+            path = f"/trade-api/v2/markets/{ticker}"
+            url = f"{self.BASE_URL}/markets/{ticker}"
+            response = requests.get(url, headers=self._get_headers("GET", path), timeout=30)
+            response.raise_for_status()
+            market_data = response.json() if response.status_code == 200 else {}
 
-        return {"market": market_data, "orderbook": book_data}
+            # Get order book
+            book_path = f"/trade-api/v2/markets/{ticker}/orderbook"
+            book_url = f"{self.BASE_URL}/markets/{ticker}/orderbook"
+            book_response = requests.get(book_url, headers=self._get_headers("GET", book_path), timeout=30)
+            book_response.raise_for_status()
+            book_data = book_response.json() if book_response.status_code == 200 else {}
 
+            # Log successful API call
+            latency_ms = (time.time() - start_time) * 1000
+            audit_logger.log_api_call(
+                user_id=self.member_id or self.api_key_id or "unknown",
+                api="kalshi",
+                endpoint=f"markets/{ticker}",
+                method="GET",
+                status_code=response.status_code,
+                latency_ms=latency_ms
+            )
+
+            return {"market": market_data, "orderbook": book_data}
+
+        except requests.exceptions.RequestException as e:
+            # Log failed API call
+            latency_ms = (time.time() - start_time) * 1000
+            audit_logger.log_api_call(
+                user_id=self.member_id or self.api_key_id or "unknown",
+                api="kalshi",
+                endpoint=f"markets/{ticker}",
+                method="GET",
+                status_code=getattr(e.response, 'status_code', 0) if hasattr(e, 'response') else 0,
+                latency_ms=latency_ms
+            )
+            raise  # Re-raise to trigger circuit breaker
+
+    @kalshi_breaker
     def place_order(self, ticker: str, side: str, count: int, price: int) -> Dict[str, Any]:
         """
         Place an order.
         side: 'yes' or 'no' (Kalshi uses 'yes'/'no' for binary options)
         price: in cents (1-99)
         """
+        start_time = time.time()
         path = "/trade-api/v2/portfolio/orders"
         url = f"{self.BASE_URL}/portfolio/orders"
 
@@ -174,18 +209,90 @@ class KalshiClient:
         }
 
         body = json.dumps(payload)
-        response = requests.post(url, data=body, headers=self._get_headers("POST", path, body))
-        return response.json()
 
+        try:
+            response = requests.post(url, data=body, headers=self._get_headers("POST", path, body), timeout=30)
+            response.raise_for_status()
+            result = response.json()
+
+            # Log successful order placement
+            latency_ms = (time.time() - start_time) * 1000
+            audit_logger.log_api_call(
+                user_id=self.member_id or self.api_key_id or "unknown",
+                api="kalshi",
+                endpoint="portfolio/orders",
+                method="POST",
+                status_code=response.status_code,
+                latency_ms=latency_ms
+            )
+
+            # Log the order itself
+            order_id = result.get("order", {}).get("order_id", "unknown")
+            audit_logger.log_order(
+                user_id=self.member_id or self.api_key_id or "unknown",
+                order_id=order_id,
+                side=side,
+                order_type="limit",
+                quantity=count,
+                price=price
+            )
+
+            return result
+
+        except requests.exceptions.RequestException as e:
+            # Log failed API call
+            latency_ms = (time.time() - start_time) * 1000
+            audit_logger.log_api_call(
+                user_id=self.member_id or self.api_key_id or "unknown",
+                api="kalshi",
+                endpoint="portfolio/orders",
+                method="POST",
+                status_code=getattr(e.response, 'status_code', 0) if hasattr(e, 'response') else 0,
+                latency_ms=latency_ms
+            )
+            raise  # Re-raise to trigger circuit breaker
+
+    @kalshi_breaker
     def get_balance(self) -> Dict[str, Any]:
         """
         Get portfolio balance.
         """
+        start_time = time.time()
         path = "/trade-api/v2/portfolio/balance"
         url = f"{self.BASE_URL}/portfolio/balance"
-        response = requests.get(url, headers=self._get_headers("GET", path))
-        return response.json()
 
+        try:
+            response = requests.get(url, headers=self._get_headers("GET", path), timeout=30)
+            response.raise_for_status()
+            result = response.json()
+
+            # Log successful API call
+            latency_ms = (time.time() - start_time) * 1000
+            audit_logger.log_api_call(
+                user_id=self.member_id or self.api_key_id or "unknown",
+                api="kalshi",
+                endpoint="portfolio/balance",
+                method="GET",
+                status_code=response.status_code,
+                latency_ms=latency_ms
+            )
+
+            return result
+
+        except requests.exceptions.RequestException as e:
+            # Log failed API call
+            latency_ms = (time.time() - start_time) * 1000
+            audit_logger.log_api_call(
+                user_id=self.member_id or self.api_key_id or "unknown",
+                api="kalshi",
+                endpoint="portfolio/balance",
+                method="GET",
+                status_code=getattr(e.response, 'status_code', 0) if hasattr(e, 'response') else 0,
+                latency_ms=latency_ms
+            )
+            raise  # Re-raise to trigger circuit breaker
+
+    @kalshi_breaker
     def get_markets(
         self,
         series_ticker: Optional[str] = None,
@@ -207,6 +314,7 @@ class KalshiClient:
         Returns:
             Dict with 'markets' list and 'cursor' for pagination
         """
+        start_time = time.time()
         url = f"{self.BASE_URL}/markets"
         params = {"limit": limit}
 
@@ -220,13 +328,38 @@ class KalshiClient:
             params["cursor"] = cursor
 
         path = "/trade-api/v2/markets"
-        response = requests.get(url, params=params, headers=self._get_headers("GET", path))
 
-        if response.status_code == 200:
-            return response.json()
-        else:
-            print(f"Error fetching markets: {response.status_code} - {response.text}")
-            return {"markets": [], "cursor": None}
+        try:
+            response = requests.get(url, params=params, headers=self._get_headers("GET", path), timeout=30)
+            response.raise_for_status()
+            result = response.json()
+
+            # Log successful API call
+            latency_ms = (time.time() - start_time) * 1000
+            audit_logger.log_api_call(
+                user_id=self.member_id or self.api_key_id or "unknown",
+                api="kalshi",
+                endpoint="markets",
+                method="GET",
+                status_code=response.status_code,
+                latency_ms=latency_ms
+            )
+
+            return result
+
+        except requests.exceptions.RequestException as e:
+            # Log failed API call
+            latency_ms = (time.time() - start_time) * 1000
+            audit_logger.log_api_call(
+                user_id=self.member_id or self.api_key_id or "unknown",
+                api="kalshi",
+                endpoint="markets",
+                method="GET",
+                status_code=getattr(e.response, 'status_code', 0) if hasattr(e, 'response') else 0,
+                latency_ms=latency_ms
+            )
+            print(f"Error fetching markets: {e}")
+            raise  # Re-raise to trigger circuit breaker
 
     def get_events(
         self, series_ticker: Optional[str] = None, status: Optional[str] = None, limit: int = 200, cursor: Optional[str] = None
@@ -345,6 +478,7 @@ class KalshiClient:
 
         return all_markets
 
+    @kalshi_breaker
     def get_market(self, ticker: str) -> Dict[str, Any]:
         """
         Get detailed information about a specific market.
@@ -355,16 +489,41 @@ class KalshiClient:
         Returns:
             Dict with market details
         """
+        start_time = time.time()
         url = f"{self.BASE_URL}/markets/{ticker}"
         path = f"/trade-api/v2/markets/{ticker}"
 
-        response = requests.get(url, headers=self._get_headers("GET", path))
+        try:
+            response = requests.get(url, headers=self._get_headers("GET", path), timeout=30)
+            response.raise_for_status()
+            result = response.json().get("market", {})
 
-        if response.status_code == 200:
-            return response.json().get("market", {})
-        else:
-            print(f"Error fetching market {ticker}: {response.status_code} - {response.text}")
-            return {}
+            # Log successful API call
+            latency_ms = (time.time() - start_time) * 1000
+            audit_logger.log_api_call(
+                user_id=self.member_id or self.api_key_id or "unknown",
+                api="kalshi",
+                endpoint=f"markets/{ticker}",
+                method="GET",
+                status_code=response.status_code,
+                latency_ms=latency_ms
+            )
+
+            return result
+
+        except requests.exceptions.RequestException as e:
+            # Log failed API call
+            latency_ms = (time.time() - start_time) * 1000
+            audit_logger.log_api_call(
+                user_id=self.member_id or self.api_key_id or "unknown",
+                api="kalshi",
+                endpoint=f"markets/{ticker}",
+                method="GET",
+                status_code=getattr(e.response, 'status_code', 0) if hasattr(e, 'response') else 0,
+                latency_ms=latency_ms
+            )
+            print(f"Error fetching market {ticker}: {e}")
+            raise  # Re-raise to trigger circuit breaker
 
     def get_market_trades(
         self, ticker: str, min_ts: Optional[int] = None, max_ts: Optional[int] = None, limit: int = 100, cursor: Optional[str] = None
