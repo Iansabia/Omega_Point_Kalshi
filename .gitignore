@@ -58,3 +58,9 @@ data/historical/*.json
 
 # OS
 Thumbs.db
+
+# Private keys and credentials (NEVER COMMIT!)
+*.pem
+*.key
+*private_key*
+kalshi_private_key.pem
